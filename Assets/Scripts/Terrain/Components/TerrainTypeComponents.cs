@@ -6,7 +6,6 @@ public struct Sector : IComponentData
 {
     public Entity entity;
     public float3 worldPosition;
-    public byte sectorDrawType;
 }
 
 public struct AdjacentSectors : IComponentData
@@ -49,3 +48,18 @@ public struct AdjacentSectors : IComponentData
     }
 }
 
+public struct SectorVisFacesCount : IComponentData
+{
+    public readonly int faceCount;
+    public readonly int vertCount;
+    public readonly int triCount;
+    public readonly int uvCount;
+
+    public SectorVisFacesCount (int faceCount, int vertCount, int triCount, int uvCount)
+    {
+        this.faceCount = faceCount;
+        this.vertCount = vertCount;
+        this.triCount = triCount;
+        this.uvCount = uvCount;
+    }
+}

@@ -6,7 +6,7 @@ public class TerrainSettings
     public static Material terrainMaterial = AssetDatabase.LoadAssetAtPath<Material> ("Assets/Materials/TerrainMaterial.mat");
     //public static Material terrainMaterial = AssetDatabase.LoadAssetAtPath<Material> ("Assets/Materials/TestMaterial.mat");
 
-    public const int sectorSize = 32;
+    public const int sectorSize = 16;
     public const int seaLevel = 128;
     public const int sectorGenerationRange = 4;
 
@@ -30,7 +30,7 @@ public class TerrainSettings
     // terrain surface cell noise settings (first noise that terrain gets)
     public const int seed = 1337;
     public const float cellFrequency = 0.015f;  // affects region size in the cellular noise used to generate them
-    public const float perterbAmp = 10.0f;
+    public const float perterbAmp = 0.5f;
     public const float cellularJitter = 0.15f;
 }
 

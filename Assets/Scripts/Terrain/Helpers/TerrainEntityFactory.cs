@@ -11,19 +11,18 @@ public static class TerrainEntityFactory
             ComponentType.ReadWrite<Sector> (),
             ComponentType.ReadWrite<Translation> (),
             ComponentType.ReadWrite<RenderMeshProxy> (),
+            ComponentType.ReadWrite<LocalToWorld>(),
             ComponentType.ReadWrite<WorleySurfaceNoise> (),    // surface noise buffer for the sectors XZ
             ComponentType.ReadWrite<SurfaceCell> (),
             ComponentType.ReadWrite<Topography> (),            // surface Height buffer
             ComponentType.ReadWrite<Block> (),
-            ComponentType.ReadWrite<AdjacentSectors>(),
 
             // tags
-            ComponentType.ReadOnly<GetSectorNoiseTag> (),  // removed after sector has its noise and buffer of individual cells
-            ComponentType.ReadOnly<GetUniqueSurfaceCellsTag> (),  // remove after sector has its individual cells reduced down to unique only
-            ComponentType.ReadOnly<GetSectorTopographyTag> (),
-            ComponentType.ReadOnly<GetSectorDrawTypeTag>(),
-            ComponentType.ReadOnly<GenerateSectorGeologyTag> (),
-            ComponentType.ReadOnly<GetAdjacentSectorsTag> (),
+            ComponentType.ReadOnly<GetSectorNoise> (),  // removed after sector has its noise and buffer of individual cells
+            ComponentType.ReadOnly<GetUniqueSurfaceCells> (),  // remove after sector has its individual cells reduced down to unique only
+            ComponentType.ReadOnly<GetSectorTopography> (),
+            ComponentType.ReadOnly<GenerateSectorGeology> (),
+            ComponentType.ReadOnly<GetAdjacentSectors> (),
             ComponentType.ReadOnly<DrawMeshTag> ()
 
             );

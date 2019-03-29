@@ -213,8 +213,8 @@ public struct Matrix3D<T> where T : struct
             rootPositionChange.z = backGap;
         }
 
-        rootPositionChange -= 3;
-        widthChange += 3;
+        //rootPositionChange -= 3;
+        //widthChange += 3;
 
         int newWidth = width;
         if (widthChange.x + widthChange.y + widthChange.z > 0)

@@ -110,17 +110,78 @@ public struct Util
 
         return absX < range && absY < range && absZ < range;
     }
+
+    public float3 EdgeOverlap3D(float3 localPosition, int sectorSize)
+    {
+        return new float3(
+            (int)localPosition.x == sectorSize ? 1 : (int)localPosition.x < 0 ? -1 : 0,
+            (int)localPosition.y == sectorSize ? 1 : (int)localPosition.y < 0 ? -1 : 0,
+            (int)localPosition.z == sectorSize ? 1 : (int)localPosition.z < 0 ? -1 : 0
+            );
+    }
+
+    public int WrapAndFlatten(int3 position, int sectorSize)
+    {
+        return Flatten(WrapBlockIndex(position, sectorSize), sectorSize);
+    }
+
+    int3 WrapBlockIndex(int3 pos, int sectorSize)
+    {
+        int x = pos.x;
+        int y = pos.y;
+        int z = pos.z;
+
+        if (x == -1)
+            x = sectorSize - 1;
+        else if (x == sectorSize)
+            x = 0;
+
+        if (y == -1)
+            y = sectorSize - 1;
+        else if (y == sectorSize)
+            y = 0;
+
+        if (z == -1)
+            z = sectorSize - 1;
+        else if (z == sectorSize)
+            z = 0;
+
+        return new int3(x, y, z);
+    }
+
+
+
+    // sector range checks if needed inside burst jobs/ mimics methods in matrix3D
+    public bool SectorMatrixInRangeFromWorldPositionCheck (int3 fromWorldPos, int3 toWorldPos, int3 rootPos, int range, int sectorSize)
+    {
+        int3 fromMatrixPos = WorldToSectorMatrixPosition(fromWorldPos, rootPos, sectorSize);
+        int3 toMatrixPos = WorldToSectorMatrixPosition(toWorldPos, rootPos, sectorSize);
+
+        return SectorMatrixInRangeFromMatrixPosition(fromMatrixPos, toMatrixPos, range);
+    }
+
+    int3 WorldToSectorMatrixPosition (int3 worldPosition, int3 rootPos, int itemWorldSize)
+    {
+        return (worldPosition - rootPos) / itemWorldSize;
+    }
+
+    bool SectorMatrixInRangeFromMatrixPosition (int3 fromMatrixPos, int3 toMatrixPos, int range)
+    {
+        if (fromMatrixPos.x >= toMatrixPos.x - range &&
+            fromMatrixPos.y >= toMatrixPos.y - range &&
+            fromMatrixPos.z >= toMatrixPos.z - range &&
+            fromMatrixPos.x <= toMatrixPos.x + range &&
+            fromMatrixPos.y <= toMatrixPos.y + range &&
+            fromMatrixPos.z <= toMatrixPos.z + range)
+
+            return true;
+        else
+            return false;
+    }
 }
 
 public struct CubeDirections
 {
-    public int3 north;
-    public int3 south;
-    public int3 east;
-    public int3 west;
-    public int3 up;
-    public int3 down;
-
     public int3 this [int direction]
     {
         get

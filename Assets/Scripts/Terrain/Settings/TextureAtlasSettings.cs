@@ -886,14 +886,19 @@ public struct TextureAtlasSettings
         }
     }
 
-    public void Uvs (NativeArray<float2> array, ushort id, Dir dir)  // mesh gen system uses this
+    public TextureUVHelper GetUVs (ushort id, Dir dir)  // mesh gen system uses this
     {
-        ID atlasId = (ID) id;
-        Vector2 texturePos = GetTextureCoord (atlasId, dir);
-        array [0] = new float2 (texturePos.x * tUnit + tUnit, texturePos.y * tUnit + tUnit);
-        array [1] = new float2 (texturePos.x * tUnit, texturePos.y * tUnit + tUnit);
-        array [2] = new float2 (texturePos.x * tUnit, texturePos.y * tUnit);
-        array [3] = new float2 (texturePos.x * tUnit + tUnit, texturePos.y * tUnit);
+        ID atlasId = (ID)id;
+        Vector2 texturePos = GetTextureCoord(atlasId, dir);
+
+        TextureUVHelper texUVHelper = new TextureUVHelper
+        {
+            pos1 = new float2(texturePos.x * tUnit + tUnit, texturePos.y * tUnit + tUnit),
+            pos2 = new float2(texturePos.x * tUnit, texturePos.y * tUnit + tUnit),
+            pos3 = new float2(texturePos.x * tUnit, texturePos.y * tUnit),
+            pos4 = new float2(texturePos.x * tUnit + tUnit, texturePos.y * tUnit)
+        };
+        return texUVHelper;
     }
 
     public ushort From2DTo1D (Vector2 textureCoord) // use this for getting texture atlas vector2 as an int
@@ -903,5 +908,29 @@ public struct TextureAtlasSettings
         ushort Y = (ushort) math.floor (textureCoord.y);
 
         return (ushort) (X + (Y * textureSize));
+    }
+}
+
+public struct TextureUVHelper
+{
+    public float2 pos1;
+    public float2 pos2;
+    public float2 pos3;
+    public float2 pos4;
+
+    public float2 this[int point]
+    {
+        get
+        {
+            switch (point)
+            {
+                case 0: return pos1;
+                case 1: return pos2;
+                case 2: return pos3;
+                case 3: return pos4;
+
+                default: throw new System.ArgumentOutOfRangeException("Index out of range 3: " + point);
+            }
+        }
     }
 }

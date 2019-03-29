@@ -1,4 +1,5 @@
-﻿using Unity.Collections;
+﻿using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
@@ -20,6 +21,7 @@ public class TerrainSystem : JobComponentSystem
     int matrixWidth;
 
     public bool update;
+    List<ComponentSystemBase> OnUpdateTerrainCheckSystems;
 
     protected override void OnCreateManager()
     {
@@ -51,15 +53,18 @@ public class TerrainSystem : JobComponentSystem
 
         if (playersCurrentSector.Equals(playersPreviousSector))
         {
-            update = false;
             return inputDeps;
         }
-        update = true;
+
+        EntityCommandBuffer eCBuffer = new EntityCommandBuffer(Allocator.Temp);
+
         playersPreviousSector = playersCurrentSector;
 
         GenerateSectorsInRange(playersCurrentSector);
         RemoveOutOfRangeSectors(playersCurrentSector);
+        CheckSectorDrawRange(playersCurrentSector, eCBuffer);
 
+        
         return inputDeps;
     }
 
@@ -121,5 +126,44 @@ public class TerrainSystem : JobComponentSystem
                 sectorMatrix.UnsetItem(i);
             }
         }
+    }
+
+    void CheckSectorDrawRange(int3 playersCurrentSector, EntityCommandBuffer eCBuffer)
+    {
+        int range = TerrainSettings.sectorGenerationRange;
+        for (int i = 0; i < sectorMatrix.Length; i++)
+        {
+            if (!sectorMatrix.ItemIsSet(i))
+                continue;
+
+            int3 sectorPosToCheck = sectorMatrix.IndexToWorldPosition(i);
+            Entity sectorEntity = sectorMatrix.GetItem(i);
+
+            if (sectorMatrix.InRangeFromWorldPosition(playersCurrentSector, sectorPosToCheck, range - 1))
+            {
+
+                if (!entityManager.HasComponent(sectorEntity, typeof(InDrawRangeSectorTag)))
+                {
+                    eCBuffer.AddComponent(sectorEntity, new InDrawRangeSectorTag());
+                }
+                if (entityManager.HasComponent(sectorEntity, typeof(OutOfDrawRangeSectorTag)))
+                {
+                    eCBuffer.RemoveComponent(sectorEntity, typeof(OutOfDrawRangeSectorTag));
+                }
+            }
+            else
+            {
+                if (!entityManager.HasComponent(sectorEntity, typeof(OutOfDrawRangeSectorTag)))
+                {
+                    eCBuffer.AddComponent(sectorEntity, new OutOfDrawRangeSectorTag());
+                }
+                if (entityManager.HasComponent(sectorEntity, typeof(InDrawRangeSectorTag)))
+                {
+                    eCBuffer.RemoveComponent(sectorEntity, typeof(InDrawRangeSectorTag));
+                }
+            }
+        }
+        eCBuffer.Playback(entityManager);
+        eCBuffer.Dispose();
     }
 }

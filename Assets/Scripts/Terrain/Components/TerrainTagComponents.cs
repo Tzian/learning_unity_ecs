@@ -1,13 +1,18 @@
 ﻿using Unity.Entities;
 
 // sector tags for job filtering from generation to drawn
-public struct GetSectorNoiseTag : IComponentData { }
-public struct GetUniqueSurfaceCellsTag : IComponentData { }
-public struct GetSectorTopographyTag : IComponentData { }
-public struct GetSectorDrawTypeTag : IComponentData { }
-public struct GenerateSectorGeologyTag : IComponentData { }
-public struct GetAdjacentSectorsTag : IComponentData { }
+
+public struct GetSectorNoise : IComponentData { }
+public struct GetUniqueSurfaceCells : IComponentData { }
+public struct GetSectorTopography : IComponentData { }
+public struct GenerateSectorGeology : IComponentData { }
+public struct GetAdjacentSectors : IComponentData { }
+
+
+
+public struct NeighboursAreReady : IComponentData { }
 public struct DrawMeshTag : IComponentData { }
+public struct MeshRedraw : IComponentData { }
 
 
 public struct InDrawRangeSectorTag : IComponentData { }

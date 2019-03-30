@@ -3,8 +3,8 @@ using Unity.Entities;
 using Unity.Rendering;
 using UnityEngine;
 
-[UpdateAfter(typeof(SectorGenMeshDataSystem))]
-public class ApplyMeshDataSystem : ComponentSystem
+[UpdateAfter(typeof(InnerRangeMeshGenSystem))]
+public class InnerRangeApplyMeshSystem : ComponentSystem
 {
     EntityManager entityManager;
 
@@ -17,7 +17,7 @@ public class ApplyMeshDataSystem : ComponentSystem
         material = TerrainSettings.terrainMaterial;
         EntityArchetypeQuery applyMeshQuery = new EntityArchetypeQuery
         {
-            None = new ComponentType[] { typeof(OutOfDrawRangeSectorTag) },
+            None = new ComponentType[] { typeof(NotInDrawRangeSectorTag), typeof(OuterDrawRangeSectorTag) },
             All = new ComponentType[] { typeof(Sector), typeof(MeshVert) }
         };
         applyMeshGroup = GetComponentGroup(applyMeshQuery);

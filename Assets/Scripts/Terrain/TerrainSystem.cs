@@ -139,27 +139,50 @@ public class TerrainSystem : JobComponentSystem
             int3 sectorPosToCheck = sectorMatrix.IndexToWorldPosition(i);
             Entity sectorEntity = sectorMatrix.GetItem(i);
 
-            if (sectorMatrix.InRangeFromWorldPosition(playersCurrentSector, sectorPosToCheck, range - 1))
+            if (sectorMatrix.InRangeFromWorldPosition(playersCurrentSector, sectorPosToCheck, range - 5))
             {
 
-                if (!entityManager.HasComponent(sectorEntity, typeof(InDrawRangeSectorTag)))
+                if (!entityManager.HasComponent(sectorEntity, typeof(InnerDrawRangeSectorTag)))
                 {
-                    eCBuffer.AddComponent(sectorEntity, new InDrawRangeSectorTag());
+                    eCBuffer.AddComponent(sectorEntity, new InnerDrawRangeSectorTag());
                 }
-                if (entityManager.HasComponent(sectorEntity, typeof(OutOfDrawRangeSectorTag)))
+                if (entityManager.HasComponent(sectorEntity, typeof(OuterDrawRangeSectorTag)))
                 {
-                    eCBuffer.RemoveComponent(sectorEntity, typeof(OutOfDrawRangeSectorTag));
+                    eCBuffer.RemoveComponent(sectorEntity, typeof(OuterDrawRangeSectorTag));
+                }
+                if (entityManager.HasComponent(sectorEntity, typeof(NotInDrawRangeSectorTag)))
+                {
+                    eCBuffer.RemoveComponent(sectorEntity, typeof(NotInDrawRangeSectorTag));
+                }
+            }
+            else if (sectorMatrix.InRangeFromWorldPosition(playersCurrentSector, sectorPosToCheck, range - 3))
+            {
+                if (!entityManager.HasComponent(sectorEntity, typeof(OuterDrawRangeSectorTag)))
+                {
+                    eCBuffer.AddComponent(sectorEntity, new OuterDrawRangeSectorTag());
+                }
+                if (entityManager.HasComponent(sectorEntity, typeof(InnerDrawRangeSectorTag)))
+                {
+                    eCBuffer.RemoveComponent(sectorEntity, typeof(InnerDrawRangeSectorTag));
+                }
+                if (entityManager.HasComponent(sectorEntity, typeof(NotInDrawRangeSectorTag)))
+                {
+                    eCBuffer.RemoveComponent(sectorEntity, typeof(NotInDrawRangeSectorTag));
                 }
             }
             else
             {
-                if (!entityManager.HasComponent(sectorEntity, typeof(OutOfDrawRangeSectorTag)))
+                if (!entityManager.HasComponent(sectorEntity, typeof(NotInDrawRangeSectorTag)))
                 {
-                    eCBuffer.AddComponent(sectorEntity, new OutOfDrawRangeSectorTag());
+                    eCBuffer.AddComponent(sectorEntity, new NotInDrawRangeSectorTag());
                 }
-                if (entityManager.HasComponent(sectorEntity, typeof(InDrawRangeSectorTag)))
+                if (entityManager.HasComponent(sectorEntity, typeof(InnerDrawRangeSectorTag)))
                 {
-                    eCBuffer.RemoveComponent(sectorEntity, typeof(InDrawRangeSectorTag));
+                    eCBuffer.RemoveComponent(sectorEntity, typeof(InnerDrawRangeSectorTag));
+                }
+                if (entityManager.HasComponent(sectorEntity, typeof(OuterDrawRangeSectorTag)))
+                {
+                    eCBuffer.RemoveComponent(sectorEntity, typeof(OuterDrawRangeSectorTag));
                 }
             }
         }

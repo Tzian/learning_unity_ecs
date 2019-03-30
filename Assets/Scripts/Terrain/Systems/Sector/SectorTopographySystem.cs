@@ -2,7 +2,7 @@
 using Unity.Entities;
 using Unity.Jobs;
 
-
+[UpdateAfter(typeof(SectorSurfaceNoiseSystem))]
 public class SectorTopographySystem : JobComponentSystem
 {
     EntityManager entityManager;
@@ -20,15 +20,15 @@ public class SectorTopographySystem : JobComponentSystem
 
         NativeQueue<Entity> entitiesForTagRemoval = new NativeQueue<Entity>(Allocator.TempJob);
 
-        var sectorTopographyJob = new SectorTopographyJob
+        var sectorTopographyJob = new GetStartingTopograpnyJob
         {
+            EntitiesForTagRemoval = entitiesForTagRemoval,
+
             SurfaceNoiseBufferFrom = GetBufferFromEntity<WorleySurfaceNoise>(true),
             TopographyBufferFrom = GetBufferFromEntity<Topography>(false),
-            EntitiesForTagRemoval = entitiesForTagRemoval,
             TTUtil = new TopographyTypeUtil(),
             Util = new Util(),
             SectorSize = sectorSize,
-            SeaLevel = TerrainSettings.seaLevel,
             MinSurfaceHeight = TerrainSettings.minWorldHeight,
             MaxSurfaceHeight = TerrainSettings.maxWorldHeight
 

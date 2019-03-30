@@ -1,16 +1,16 @@
 ﻿using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using Unity.Mathematics;
+using Unity.Transforms;
+using UnityEngine;
 
-
-[UpdateAfter(typeof (SectorFaceCullingSystem))]
-public class SectorGenMeshDataSystem : ComponentSystem
+[UpdateAfter(typeof(InnerRangeFaceCullingSystem))]
+public class InnerRangeMeshGenSystem : JobComponentSystem
 {
+
     EntityManager entityManager;
     ComponentGroup meshDataGroup;
-
-    JobHandle runningJobHandle;
-    EntityCommandBuffer runningCommandBuffer;
 
     protected override void OnCreateManager()
     {
@@ -18,43 +18,23 @@ public class SectorGenMeshDataSystem : ComponentSystem
 
         EntityArchetypeQuery meshDataQuery = new EntityArchetypeQuery
         {
+            None = new ComponentType[] { typeof(NotInDrawRangeSectorTag), typeof(OuterDrawRangeSectorTag) },
             All = new ComponentType[] { typeof(Sector), typeof(SectorVisFacesCount) }
         };
         meshDataGroup = GetComponentGroup(meshDataQuery);
-
-        runningJobHandle = new JobHandle();
-        runningCommandBuffer = new EntityCommandBuffer(Allocator.TempJob);
     }
 
-    protected override void OnDestroyManager()
-    {
-        if (runningCommandBuffer.IsCreated) runningCommandBuffer.Dispose();
-    }
-
-    protected override void OnUpdate()
-    {
-        if (!runningJobHandle.IsCompleted)
-            return;
-
-        JobCompleteAndBufferPlayback();
-        ScheduleMoreJobs();
-    }
-
-    void JobCompleteAndBufferPlayback()
-    {
-        runningJobHandle.Complete();
-
-        runningCommandBuffer.Playback(entityManager);
-        runningCommandBuffer.Dispose();
-    }
-
-    void ScheduleMoreJobs()
+    protected override JobHandle OnUpdate(JobHandle inputDeps)
     {
         NativeArray<ArchetypeChunk> dataChunks = meshDataGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
+        if (dataChunks.Length == 0)
+        {
+            dataChunks.Dispose();
+            return inputDeps;
+        }
+
         EntityCommandBuffer eCBuffer = new EntityCommandBuffer(Allocator.TempJob);
-        JobHandle allHandles = new JobHandle();
-        JobHandle previousHandle = new JobHandle();
 
         ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
         ArchetypeChunkComponentType<Sector> sectorType = GetArchetypeChunkComponentType<Sector>(true);
@@ -75,7 +55,7 @@ public class SectorGenMeshDataSystem : ComponentSystem
 
             for (int e = 0; e < entities.Length; e++)
             {
-                MeshDataJob meshDataJob = new MeshDataJob()
+                var meshDataJob = new MeshDataJob()
                 {
                     ECBuffer = eCBuffer,
                     entity = entities[e],
@@ -84,19 +64,16 @@ public class SectorGenMeshDataSystem : ComponentSystem
 
                     blocks = new NativeArray<Block>(blockAccessor[e].AsNativeArray(), Allocator.TempJob),
                     blockFaces = new NativeArray<BlockFaces>(facesAccessor[e].AsNativeArray(), Allocator.TempJob),
-                    
-                };
 
-                JobHandle thisHandle = meshDataJob.Schedule(previousHandle);
-                allHandles = JobHandle.CombineDependencies(thisHandle, allHandles);
-
-                previousHandle = thisHandle;
+                }.Schedule(inputDeps);
+                meshDataJob.Complete();
             }
         }
-
-        runningCommandBuffer = eCBuffer;
-        runningJobHandle = allHandles;
+        eCBuffer.Playback(entityManager);
+        eCBuffer.Dispose();
 
         dataChunks.Dispose();
+        return inputDeps;
     }
+
 }

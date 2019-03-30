@@ -18,7 +18,7 @@ public class SectorsReadyForMeshingSystem : ComponentSystem
 
         EntityArchetypeQuery squareQuery = new EntityArchetypeQuery
         {
-            None = new ComponentType[] { typeof(OutOfDrawRangeSectorTag), typeof(NeighboursAreReady) },
+            None = new ComponentType[] { typeof(NotInDrawRangeSectorTag), typeof(NeighboursAreReady) },
             All = new ComponentType[] { typeof(Sector), typeof(DrawMeshTag), typeof(AdjacentSectors) }
         };
         meshReadyGroup = GetComponentGroup(squareQuery);

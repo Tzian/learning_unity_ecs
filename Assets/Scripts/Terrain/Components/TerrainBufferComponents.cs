@@ -19,7 +19,9 @@ public struct Block : IBufferElementData
 public struct Topography : IBufferElementData
 {
     public float surfaceHeight;
+    public int topopgraphyType;
     public float adjSurfaceHeight;
+    public int adjTopographyType;
     public float dist2Edge;
 }
 

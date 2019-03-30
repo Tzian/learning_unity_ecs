@@ -15,7 +15,8 @@ public struct DrawMeshTag : IComponentData { }
 public struct MeshRedraw : IComponentData { }
 
 
-public struct InDrawRangeSectorTag : IComponentData { }
-public struct OutOfDrawRangeSectorTag : IComponentData { }
+public struct InnerDrawRangeSectorTag : IComponentData { }
+public struct OuterDrawRangeSectorTag : IComponentData { }
+public struct NotInDrawRangeSectorTag : IComponentData { }
 
 public struct SectorRemoveTag : IComponentData { }

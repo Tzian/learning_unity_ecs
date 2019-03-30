@@ -11,7 +11,7 @@ public class Bootstrapped
     [RuntimeInitializeOnLoadMethod (RuntimeInitializeLoadType.BeforeSceneLoad)]
     public static void Initialize ()
     {
-        float3 playerStartPos = new float3 (0, 130f, 0);
+        float3 playerStartPos = new float3 (0, 250f, 0);
 
         Entity playerEntity = CreatePlayer (playerStartPos);
 

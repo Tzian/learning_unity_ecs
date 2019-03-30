@@ -3,9 +3,10 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine;
 
 [UpdateAfter(typeof(SectorsReadyForMeshingSystem))]
-public class SectorFaceCullingSystem : ComponentSystem
+public class InnerRangeFaceCullingSystem : JobComponentSystem
 {
     EntityManager entityManager;
     ComponentGroup meshGroup;
@@ -14,9 +15,6 @@ public class SectorFaceCullingSystem : ComponentSystem
     Util util;
     CubeDirections cubeDirections;
 
-    JobHandle runningJobHandle;
-    EntityCommandBuffer runningECBuffer;
-
     protected override void OnCreateManager()
     {
         entityManager = World.Active.GetOrCreateManager<EntityManager>();
@@ -24,38 +22,28 @@ public class SectorFaceCullingSystem : ComponentSystem
         cubeDirections = new CubeDirections();
         sectorSize = TerrainSettings.sectorSize;
 
-        EntityArchetypeQuery squareQuery = new EntityArchetypeQuery
+        EntityArchetypeQuery sectorQuery = new EntityArchetypeQuery
         {
-            None = new ComponentType[] { typeof(OutOfDrawRangeSectorTag) },
+            None = new ComponentType[] { typeof(NotInDrawRangeSectorTag), typeof(OuterDrawRangeSectorTag) },
             All = new ComponentType[] { typeof(Sector), typeof(DrawMeshTag), typeof(AdjacentSectors), typeof(NeighboursAreReady) }
         };
-        meshGroup = GetComponentGroup(squareQuery);
+        meshGroup = GetComponentGroup(sectorQuery);
 
-        runningJobHandle = new JobHandle();
-        runningECBuffer = new EntityCommandBuffer(Allocator.TempJob);
+
     }
 
-    protected override void OnDestroyManager()
-    {
-        if (runningECBuffer.IsCreated) runningECBuffer.Dispose();
-    }
 
-    protected override void OnUpdate()
-    {
-        if (!runningJobHandle.IsCompleted)
-            return;
-
-        JobCompleteAndBufferPlayback();
-        ScheduleMoreJobs();
-    }
-
-    void ScheduleMoreJobs()
+    protected override JobHandle OnUpdate (JobHandle inputDeps)
     {
         NativeArray<ArchetypeChunk> dataChunks = meshGroup.CreateArchetypeChunkArray(Allocator.TempJob);
 
+        if (dataChunks.Length == 0)
+        {
+            dataChunks.Dispose();
+            return inputDeps;
+        }
+
         EntityCommandBuffer eCBuffer = new EntityCommandBuffer(Allocator.TempJob);
-        JobHandle allHandles = new JobHandle();
-        JobHandle previousHandle = new JobHandle();
 
         ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
         ArchetypeChunkComponentType<Translation> positionType = GetArchetypeChunkComponentType<Translation>(true);
@@ -68,7 +56,6 @@ public class SectorFaceCullingSystem : ComponentSystem
             NativeArray<Entity> entities = dataChunk.GetNativeArray(entityType);
             NativeArray<Translation> positions = dataChunk.GetNativeArray(positionType);
             NativeArray<AdjacentSectors> adjacents = dataChunk.GetNativeArray(adjacentType);
-            
 
             for (int e = 0; e < entities.Length; e++)
             {
@@ -90,7 +77,7 @@ public class SectorFaceCullingSystem : ComponentSystem
                     directions[i] = cubeDirections[i];
                 }
 
-                FacesJob job = new FacesJob()
+                var facesJob = new FacesJob()
                 {
                     ECBuffer = eCBuffer,
                     entity = entity,
@@ -107,26 +94,13 @@ public class SectorFaceCullingSystem : ComponentSystem
                     upNeighbour = upNeighbour,
                     downNeighbour = downNeighbour
 
-                };
-
-                JobHandle thisHandle = job.Schedule(previousHandle);
-                allHandles = JobHandle.CombineDependencies(thisHandle, allHandles);
-
-                previousHandle = thisHandle;
+                }.Schedule(inputDeps);
+                facesJob.Complete();
             }
         }
-
-        runningECBuffer = eCBuffer;
-        runningJobHandle = allHandles;
-
+        eCBuffer.Playback(entityManager);
+        eCBuffer.Dispose();
         dataChunks.Dispose();
-    }
-
-    void JobCompleteAndBufferPlayback()
-    {
-        runningJobHandle.Complete();
-
-        runningECBuffer.Playback(entityManager);
-        runningECBuffer.Dispose();
+        return inputDeps;
     }
 }

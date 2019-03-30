@@ -25,8 +25,9 @@ public class SectorAdjacentSystem : ComponentSystem
 
         EntityArchetypeQuery adjSectorsQuery = new EntityArchetypeQuery
         {
-            None = new ComponentType[] { typeof(OutOfDrawRangeSectorTag), typeof(GetSectorTopography), typeof (GenerateSectorGeology) },
-            All = new ComponentType[] { typeof(Sector), typeof(GetAdjacentSectors), typeof(InDrawRangeSectorTag) }
+            Any = new ComponentType[] { typeof (InnerDrawRangeSectorTag), typeof(OuterDrawRangeSectorTag) },
+            None = new ComponentType[] { typeof(NotInDrawRangeSectorTag), typeof(GetSectorTopography), typeof (GenerateSectorGeology) },
+            All = new ComponentType[] { typeof(Sector), typeof(GetAdjacentSectors) }
         };
         adjSectorsGroup = GetComponentGroup(adjSectorsQuery);
     }

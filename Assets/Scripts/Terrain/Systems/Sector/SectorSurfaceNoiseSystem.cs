@@ -2,7 +2,7 @@
 using Unity.Entities;
 using Unity.Jobs;
 
-
+[UpdateAfter(typeof(TerrainSystem))]
 public class SectorSurfaceNoiseSystem : JobComponentSystem
 {
     EntityManager entityManager;

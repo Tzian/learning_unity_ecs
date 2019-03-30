@@ -147,24 +147,25 @@ public struct GetUniqueSurfaceCellsJob : IJob
 [BurstCompile]
 [ExcludeComponent(typeof(GetSectorNoise))]
 [RequireComponentTag (typeof (GetSectorTopography))]
-public struct SectorTopographyJob : IJobProcessComponentDataWithEntity<Sector>
+public struct GetStartingTopograpnyJob : IJobProcessComponentDataWithEntity<Sector>
 {
+    [NativeDisableParallelForRestriction]
+    public NativeQueue<Entity> EntitiesForTagRemoval;
+
     [ReadOnly]
     public BufferFromEntity<WorleySurfaceNoise> SurfaceNoiseBufferFrom;
     [NativeDisableParallelForRestriction]
     public BufferFromEntity<Topography> TopographyBufferFrom;
-    [NativeDisableParallelForRestriction]
-    public NativeQueue<Entity> EntitiesForTagRemoval;
 
-    public Util Util;
     public TopographyTypeUtil TTUtil;
+    public Util Util;
     public int SectorSize;
-    public int SeaLevel;
     public int MinSurfaceHeight;
     public int MaxSurfaceHeight;
 
     public void Execute (Entity sectorEntity, int index, ref Sector sector)
     {
+
         DynamicBuffer<WorleySurfaceNoise> surfaceCellBuffer = SurfaceNoiseBufferFrom [sectorEntity];
         DynamicBuffer<Topography> topographyBuffer = TopographyBufferFrom [sectorEntity];
         topographyBuffer.ResizeUninitialized ((int) math.pow (SectorSize, 2));
@@ -172,37 +173,103 @@ public struct SectorTopographyJob : IJobProcessComponentDataWithEntity<Sector>
         for (int i = 0; i < topographyBuffer.Length; i++)
         {
             int3 worldPosition = (int3) (sector.worldPosition + Util.Unflatten2D (i, SectorSize));
-
-            Topography heightComponent = GetStartingSurfaceCellHeight (surfaceCellBuffer [i], worldPosition);
-
-            topographyBuffer [i] = heightComponent;  
+            Topography heightComponent = GetStartingSurfaceCellHeight(surfaceCellBuffer[i], worldPosition);
+            topographyBuffer[i] = heightComponent;
         }
         EntitiesForTagRemoval.Enqueue(sectorEntity);
     }
 
-    public Topography GetStartingSurfaceCellHeight (WorleySurfaceNoise surfaceCell, int3 worldPosition)
+    public Topography GetStartingSurfaceCellHeight(WorleySurfaceNoise surfaceCell, int3 worldPosition)
     {
-        float surfaceHeight = 128;  // start min surface height
-        float adjSurfaceHeight = 128;
+        float cellHeight = surfaceCell.distance2Edge;
+        float scale = MaxSurfaceHeight * (cellHeight / 2);
 
-        //float modifier = (MaxSurfaceHeight - MinSurfaceHeight) * surfaceCell.currentSurfaceCellValue;
-        //float adjModifier = (MaxSurfaceHeight - MinSurfaceHeight) * surfaceCell.adjacentSurfaceCellValue;
+        float surfaceHeight = scale;  // start min surface height
+        float adjSurfaceHeight = scale;
 
-        //surfaceHeight += modifier;
-        //adjSurfaceHeight += adjModifier;
+        if (surfaceHeight < MinSurfaceHeight)
+            surfaceHeight = MinSurfaceHeight;
+        if (surfaceHeight > MaxSurfaceHeight)
+            surfaceHeight = MaxSurfaceHeight;
 
         return new Topography
         {
             surfaceHeight = surfaceHeight,
             dist2Edge = surfaceCell.distance2Edge,
             adjSurfaceHeight = adjSurfaceHeight,
+            topopgraphyType = (int)TTUtil.TerrainType(surfaceCell.currentSurfaceCellValue),
+            adjTopographyType = (int)TTUtil.TerrainType(surfaceCell.adjacentSurfaceCellValue),
+
         };
     }
 }
 
+//[ExcludeComponent(typeof(GetSectorNoise))]
+//[RequireComponentTag(typeof(GetSectorTopography))]
+//public struct SectorAddNoiseToSurfaceHeightJob : IJobProcessComponentDataWithEntity<Sector>
+//{
 
-// moved SectorGeologyJob to its own script as access to it may be frequent for updating/modifying methods
+//    [NativeDisableParallelForRestriction]
+//    public BufferFromEntity<Topography> TopographyBufferFrom;
 
+//    public TopographyTypeUtil TTUtil;
+//    public Util Util;
+//    public int SectorSize;
+
+//    public void Execute(Entity sectorEntity, int index, ref Sector sector)
+//    {
+//        DynamicBuffer<Topography> topographyBuffer = TopographyBufferFrom[sectorEntity];
+
+//        for (int i = 0; i < topographyBuffer.Length; i++)
+//        {
+//            int3 worldPosition = (int3)(sector.worldPosition + Util.Unflatten2D(i, SectorSize));
+//            Topography heightComponent = topographyBuffer[i];
+
+//            TopographyTypes currentTopographyType = (TopographyTypes)heightComponent.topopgraphyType;
+//            TopographyTypes adjacentTopographyType = (TopographyTypes)heightComponent.adjTopographyType;
+
+//            float surfaceHeight = heightComponent.surfaceHeight;
+//            float adjSurfaceHeight = heightComponent.adjSurfaceHeight;
+
+//            float heightDifference = math.abs(surfaceHeight - adjSurfaceHeight);
+//            float blockDistToEdge = heightComponent.dist2Edge;
+
+//            float heightIncrement = 1 / heightDifference;
+//            float heightAdjust = heightIncrement / blockDistToEdge;
+
+//            surfaceHeight += heightAdjust;
+//            //float modifier = GetNoise(currentTopographyType, worldPosition);
+//            //float adjModifier = GetNoise(adjacentTopographyType, worldPosition);
+
+//            ////surfaceHeight += modifier;
+//            //adjSurfaceHeight += adjModifier;
+
+            
+//            Topography newTopography = new Topography
+//            {
+//                surfaceHeight = surfaceHeight,
+//                topopgraphyType = (int)currentTopographyType,
+//                adjSurfaceHeight = adjSurfaceHeight,
+//                adjTopographyType = (int)adjacentTopographyType,
+//                dist2Edge = heightComponent.dist2Edge
+//            };
+//            topographyBuffer[i] = newTopography;
+
+//        }
+//        
+//    }
+
+//    float GetNoise(TopographyTypes topographyType, float3 worldPosition)
+//    {
+//        float modifier = 0;
+
+//        TopographyTypeStats topographyStats = TTUtil.GetTerrainTypeStats(topographyType);
+
+//        modifier += TTUtil.AddNoise(topographyStats, (int)worldPosition.x, (int)worldPosition.z);
+
+//        return modifier;
+//    }
+//}
 
 
 

@@ -2,6 +2,8 @@
 using Unity.Entities;
 using Unity.Jobs;
 
+
+[UpdateAfter(typeof(SectorTopographySystem))]
 public class SectorGeologySystem : JobComponentSystem
 {
     EntityManager entityManager;

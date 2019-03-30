@@ -49,7 +49,8 @@ public struct TopographyTypeUtil
 
                     minHeightOfTType = TerrainSettings.minMountainHeight,
                     maxHeightOfTType = TerrainSettings.maxMountainHeight,
-                    amplitude = 50,
+
+                    amplitude = 5,
                     frequency = 0.003f,
                     fractalOctaves = 3,
                     fractalGain = 0.4f,
@@ -68,7 +69,7 @@ public struct TopographyTypeUtil
 
                     minHeightOfTType = TerrainSettings.minHillHeight,
                     maxHeightOfTType = TerrainSettings.maxHillHeight,
-                    amplitude = 20,
+                    amplitude = 3,
                     frequency = 0.006f,
                     fractalOctaves = 3,
                     fractalGain = 0.2f,
@@ -87,7 +88,7 @@ public struct TopographyTypeUtil
 
                     minHeightOfTType = TerrainSettings.minFlatHeight,
                     maxHeightOfTType = TerrainSettings.maxFlatHeight,
-                    amplitude = 0,
+                    amplitude = 1,
                     frequency = 0.01f,
                     fractalOctaves = 2,
                     fractalGain = 0.2f,
@@ -106,7 +107,7 @@ public struct TopographyTypeUtil
 
                     minHeightOfTType = TerrainSettings.minValleyHeight,
                     maxHeightOfTType = TerrainSettings.maxValleyHeight,
-                    amplitude = 10,
+                    amplitude = 2,
                     frequency = 0.003f,
                     fractalOctaves = 2,
                     fractalGain = 0.2f,
@@ -125,7 +126,7 @@ public struct TopographyTypeUtil
 
                     minHeightOfTType = TerrainSettings.minOceanHeight,
                     maxHeightOfTType = TerrainSettings.maxOceanHeight,
-                    amplitude = 20,
+                    amplitude = 5,
                     frequency = 0.001f,
                     fractalOctaves = 2,
                     fractalGain = 0.1f,

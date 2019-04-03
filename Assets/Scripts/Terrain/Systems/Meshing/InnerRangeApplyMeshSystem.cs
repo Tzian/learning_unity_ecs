@@ -3,7 +3,7 @@ using Unity.Entities;
 using Unity.Rendering;
 using UnityEngine;
 
-[UpdateAfter(typeof(InnerRangeMeshGenSystem))]
+[UpdateAfter(typeof(TerrainSystem))]
 public class InnerRangeApplyMeshSystem : ComponentSystem
 {
     EntityManager entityManager;

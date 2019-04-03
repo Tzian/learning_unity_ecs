@@ -22,7 +22,7 @@ namespace TerrainGen
 
             EntityArchetypeQuery entitiesForMovingQuery = new EntityArchetypeQuery
             {
-                All = new ComponentType[] { typeof(Sector), typeof (InnerDrawRangeSectorTag), /*typeof(ReadyForWorldMove)*/ }
+                All = new ComponentType[] { typeof(Sector), typeof (InnerDrawRangeSectorTag), typeof(ReadyForWorldMove) }
             };
             entitiesForMovingGroup = GetComponentGroup(entitiesForMovingQuery);
 

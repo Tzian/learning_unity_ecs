@@ -11,7 +11,7 @@ namespace TerrainGen
     {
         EntityManager tGenEntityManager;
         EntityArchetype sectorEntityArchetype;
-
+        TerrainSystem terrainSystem;
         public static Entity playerEntity;
         int3 playersCurrentSector;
         int3 playersPreviousSector;
@@ -22,6 +22,7 @@ namespace TerrainGen
 
         protected override void OnCreateManager()
         {
+            terrainSystem = Worlds.defaultWorld.GetOrCreateManager<TerrainSystem>();
             tGenEntityManager = World.GetOrCreateManager<EntityManager>();
             sectorEntityArchetype = TerrainEntityFactory.CreateSectorArchetype(tGenEntityManager);
             playerEntity = TerrainSystem.playerEntity;
@@ -72,7 +73,7 @@ namespace TerrainGen
                     for (int z = startPos.z - range; z <= startPos.z + range; z++)
                     {
                         int3 sectorWorldPos = new int3(x, y, z) * sectorSize;
-                        if (util.Float3sMatchXYZ(sectorWorldPos, playersCurrentSector)) continue;  // players first sector is created in main world
+                      //  if (util.Float3sMatchXYZ(sectorWorldPos, playersCurrentSector)) continue;  // players first sector is created in main world
 
                         CreateNewSector(sectorWorldPos);
                     }
@@ -85,6 +86,7 @@ namespace TerrainGen
             Entity newSectorEntity = tGenEntityManager.CreateEntity(sectorEntityArchetype);
             tGenEntityManager.SetComponentData(newSectorEntity, new Translation { Value = sectorWorldPos });
             tGenEntityManager.SetComponentData(newSectorEntity, new Sector { entity = newSectorEntity, worldPosition = sectorWorldPos });
+            terrainSystem.sectorMatrix.AddItem(newSectorEntity, sectorWorldPos);
             return newSectorEntity;
         }
     }

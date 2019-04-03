@@ -55,7 +55,7 @@ public class TerrainSystem : ComponentSystem
         if (firstRun == true)
         {
             firstRun = false;
-            CreateStartSector(playersCurrentSector);
+            //CreateStartSector(playersCurrentSector);
         }
 
         if (playersCurrentSector.Equals(playersPreviousSector))
@@ -83,14 +83,14 @@ public class TerrainSystem : ComponentSystem
         sectorMatrix = new Matrix3D<Entity>(matrixWidth, Allocator.Persistent, playersCurrentSector, sectorSize);
     }
 
-    Entity CreateStartSector(int3 sectorWorldPos)
-    {
-        Entity newSectorEntity = entityManager.CreateEntity(sectorEntityArchetype);
-        entityManager.SetComponentData(newSectorEntity, new Translation { Value = sectorWorldPos });
-        entityManager.SetComponentData(newSectorEntity, new Sector { entity = newSectorEntity, worldPosition = sectorWorldPos });
-        sectorMatrix.AddItem(newSectorEntity, sectorWorldPos);
-        return newSectorEntity;
-    }
+    //Entity CreateStartSector(int3 sectorWorldPos)
+    //{
+    //    Entity newSectorEntity = entityManager.CreateEntity(sectorEntityArchetype);
+    //    entityManager.SetComponentData(newSectorEntity, new Translation { Value = sectorWorldPos });
+    //    entityManager.SetComponentData(newSectorEntity, new Sector { entity = newSectorEntity, worldPosition = sectorWorldPos });
+    //    sectorMatrix.AddItem(newSectorEntity, sectorWorldPos);
+    //    return newSectorEntity;
+    //}
 
     void CheckSectorDrawRange(int3 playersCurrentSector, EntityCommandBuffer eCBuffer)
     {

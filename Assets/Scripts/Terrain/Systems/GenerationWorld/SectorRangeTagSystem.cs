@@ -2,6 +2,8 @@
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using Terrain;
+using UnityEngine;
 
 namespace TerrainGen
 {
@@ -11,7 +13,8 @@ namespace TerrainGen
     public class SectorRangeTagSystem : ComponentSystem
     {
         EntityManager tGenEntityManager;
-        public static Entity playerEntity;
+        TerrainSystem terrainSystem;
+        public Entity playerEntity;
         int3 playersCurrentSector;
         int3 playersPreviousSector;
 
@@ -20,12 +23,10 @@ namespace TerrainGen
         int range;
 
         ComponentGroup sectorRangeCheckGroup;
-
         
         protected override void OnCreateManager()
         {
             tGenEntityManager = World.GetOrCreateManager<EntityManager>();
-            playerEntity = TerrainSystem.playerEntity;
             sectorSize = TerrainSettings.sectorSize;
             util = new Util();
             range = TerrainSettings.sectorGenerationRange;
@@ -35,12 +36,16 @@ namespace TerrainGen
                 All = new ComponentType[] { typeof(Sector) }
             };
             sectorRangeCheckGroup = GetComponentGroup(sectorRangeCheckQuery);
-
-           //Debug.Log("system2's created with world    " + this.World);
         }
 
         protected override void OnUpdate()
         {
+            if (terrainSystem == null)
+            {
+                terrainSystem = Worlds.defaultWorld.GetExistingManager<TerrainSystem>();
+                playerEntity = TerrainSystem.playerEntity;
+                return;
+            }
             playersCurrentSector = GetPlayersCurrentSector();
 
             NativeArray<ArchetypeChunk> dataChunks = sectorRangeCheckGroup.CreateArchetypeChunkArray(Allocator.TempJob);
@@ -156,7 +161,6 @@ namespace TerrainGen
         public int3 GetPlayersCurrentSector()
         {
             EntityManager eM = Worlds.defaultWorld.GetExistingManager<EntityManager>();
-
             float3 playerPosition = eM.GetComponentData<Translation>(playerEntity).Value;
             float3 currentSector = util.GetSectorPosition(playerPosition, sectorSize);
             return (int3)currentSector;

@@ -1,7 +1,8 @@
 ﻿using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
-
+using Terrain;
+using UnityEngine;
 
 namespace TerrainGen
 {
@@ -22,32 +23,37 @@ namespace TerrainGen
 
         protected override void OnCreateManager()
         {
-            terrainSystem = Worlds.defaultWorld.GetOrCreateManager<TerrainSystem>();
             tGenEntityManager = World.GetOrCreateManager<EntityManager>();
             sectorEntityArchetype = TerrainEntityFactory.CreateSectorArchetype(tGenEntityManager);
-            playerEntity = TerrainSystem.playerEntity;
             sectorSize = TerrainSettings.sectorSize;
             util = new Util();
             firstRun = true;
-
-           // Debug.Log("system1's created with world    " + this.World);
         }
 
         protected override void OnStartRunning()
         {
             //Debug.Log("system1's onStartRunning ");
-            playersCurrentSector = GetPlayersCurrentSector();
-            playersPreviousSector = playersCurrentSector + (100 * sectorSize);
+            
         }
 
         protected override void OnUpdate()
         {
-            //Debug.Log("in system 1 update ");
+            if (terrainSystem == null)
+            {
+                terrainSystem = Worlds.defaultWorld.GetExistingManager<TerrainSystem>();
+                playerEntity = TerrainSystem.playerEntity;
+                return;
+            }
+
+            if (terrainSystem.sectorMatrix.Length == 0)
+                return;
+
             playersCurrentSector = GetPlayersCurrentSector();
 
             if (firstRun)
             {
                 firstRun = false;
+                playersPreviousSector = playersCurrentSector + (100 * sectorSize);
                 CreateStartingSectors(playersCurrentSector);
             }
             playersPreviousSector = playersCurrentSector;
@@ -73,7 +79,6 @@ namespace TerrainGen
                     for (int z = startPos.z - range; z <= startPos.z + range; z++)
                     {
                         int3 sectorWorldPos = new int3(x, y, z) * sectorSize;
-                      //  if (util.Float3sMatchXYZ(sectorWorldPos, playersCurrentSector)) continue;  // players first sector is created in main world
 
                         CreateNewSector(sectorWorldPos);
                     }

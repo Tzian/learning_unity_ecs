@@ -2,6 +2,7 @@
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
+using Terrain;
 using UnityEngine;
 
 namespace TerrainGen
@@ -22,8 +23,10 @@ namespace TerrainGen
 
         protected override void OnCreateManager()
         {
+           // Debug.Log(" this system SectorAdjacentSystem  " + World);
+
             entityManager = World.GetOrCreateManager<EntityManager>();
-            terrainSystem = World.GetOrCreateManager<TerrainSystem>();
+            terrainSystem = Worlds.defaultWorld.GetExistingManager<TerrainSystem>();
             sectorSize = TerrainSettings.sectorSize;
             cubeDirections = new CubeDirections();
 

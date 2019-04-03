@@ -21,6 +21,8 @@ namespace TerrainGen
 
         protected override void OnCreateManager()
         {
+           // Debug.Log(" this system InnerRangeFaceCullingSystem  " + World);
+
             entityManager = World.GetOrCreateManager<EntityManager>();
             util = new Util();
             cubeDirections = new CubeDirections();

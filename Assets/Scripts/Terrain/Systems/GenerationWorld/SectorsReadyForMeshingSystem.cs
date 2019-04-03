@@ -1,5 +1,6 @@
 ﻿using Unity.Collections;
 using Unity.Entities;
+using UnityEngine;
 
 namespace TerrainGen
 {
@@ -13,6 +14,8 @@ namespace TerrainGen
 
         protected override void OnCreateManager()
         {
+          //  Debug.Log(" this system SectorsReadyForMeshingSystem" + World);
+
             entityManager = World.GetOrCreateManager<EntityManager>();
 
             EntityArchetypeQuery squareQuery = new EntityArchetypeQuery

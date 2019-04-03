@@ -1,6 +1,7 @@
 ﻿using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine;
 
 namespace TerrainGen
 {
@@ -15,6 +16,8 @@ namespace TerrainGen
 
         protected override void OnCreateManager()
         {
+           // Debug.Log(" this system  SectorGeologySystem   " + World);
+
             entityManager = World.GetOrCreateManager<EntityManager>();
             sectorSize = TerrainSettings.sectorSize;
             util = new Util();

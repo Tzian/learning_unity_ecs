@@ -19,6 +19,8 @@ namespace TerrainGen
 
         protected override void OnCreateManager()
         {
+          //  Debug.Log(" this system SectorSurfaceNoiseSystem  " + World);
+
             entityManager = World.GetOrCreateManager<EntityManager>();
             sectorSize = TerrainSettings.sectorSize;
             util = new Util();

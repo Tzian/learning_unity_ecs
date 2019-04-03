@@ -1,7 +1,7 @@
 ﻿using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
-
+using UnityEngine;
 
 namespace TerrainGen
 {
@@ -15,6 +15,8 @@ namespace TerrainGen
 
         protected override void OnCreateManager()
         {
+           // Debug.Log(" this system InnerRangeMeshGenSystem  " + World);
+
             entityManager = World.GetOrCreateManager<EntityManager>();
 
             EntityArchetypeQuery meshDataQuery = new EntityArchetypeQuery

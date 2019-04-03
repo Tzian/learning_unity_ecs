@@ -10,7 +10,7 @@ public class SectorTopographySystem : JobComponentSystem
 
     protected override void OnCreateManager()
     {
-        entityManager = World.Active.GetOrCreateManager<EntityManager>();
+        entityManager = World.GetOrCreateManager<EntityManager>();
         sectorSize = TerrainSettings.sectorSize;
     }
 

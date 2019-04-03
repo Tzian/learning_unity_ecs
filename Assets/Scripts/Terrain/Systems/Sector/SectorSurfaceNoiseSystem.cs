@@ -1,6 +1,7 @@
 ﻿using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using UnityEngine;
 
 [UpdateAfter(typeof(TerrainSystem))]
 public class SectorSurfaceNoiseSystem : JobComponentSystem
@@ -13,7 +14,7 @@ public class SectorSurfaceNoiseSystem : JobComponentSystem
 
     protected override void OnCreateManager()
     {
-        entityManager = World.Active.GetOrCreateManager<EntityManager>();
+        entityManager = World.GetOrCreateManager<EntityManager>();
         sectorSize = TerrainSettings.sectorSize;
         util = new Util();
         worleyNoiseGenerator = new WorleyNoiseGenerator

@@ -10,7 +10,7 @@ public static class TerrainEntityFactory
         return entityManager.CreateArchetype (
             ComponentType.ReadWrite<Sector> (),
             ComponentType.ReadWrite<Translation> (),
-            ComponentType.ReadWrite<RenderMeshProxy> (),
+            // ComponentType.ReadWrite<RenderMeshProxy> (),      // add this later as cannot move entities between worlds if it is on them
             ComponentType.ReadWrite<LocalToWorld>(),
             ComponentType.ReadWrite<WorleySurfaceNoise> (),    // surface noise buffer for the sectors XZ
             ComponentType.ReadWrite<SurfaceCell> (),

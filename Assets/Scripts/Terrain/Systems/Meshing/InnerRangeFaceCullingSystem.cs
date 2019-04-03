@@ -17,7 +17,7 @@ public class InnerRangeFaceCullingSystem : JobComponentSystem
 
     protected override void OnCreateManager()
     {
-        entityManager = World.Active.GetOrCreateManager<EntityManager>();
+        entityManager = World.GetOrCreateManager<EntityManager>();
         util = new Util();
         cubeDirections = new CubeDirections();
         sectorSize = TerrainSettings.sectorSize;

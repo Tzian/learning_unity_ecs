@@ -13,7 +13,7 @@ public class InnerRangeApplyMeshSystem : ComponentSystem
 
     protected override void OnCreateManager()
     {
-        entityManager = World.Active.GetOrCreateManager<EntityManager>();
+        entityManager = World.GetOrCreateManager<EntityManager>();
         material = TerrainSettings.terrainMaterial;
         EntityArchetypeQuery applyMeshQuery = new EntityArchetypeQuery
         {

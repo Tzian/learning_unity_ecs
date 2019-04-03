@@ -13,7 +13,7 @@ public class TerrainSettings
     // TerrainGen
     public const int minWorldHeight = 50;
     public const int maxWorldHeight = 460;
-
+    public const int playerStartHeight = ((maxWorldHeight - minWorldHeight) / 2) + minWorldHeight;
 
     // terrain type adjustment values
     public const int minMountainHeight = 50;

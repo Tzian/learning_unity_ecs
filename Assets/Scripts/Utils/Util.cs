@@ -84,6 +84,12 @@ public struct Util
         return new int3 (x * sectorSize, y * sectorSize, z * sectorSize);
     }
 
+    public bool Float3sMatchXYZ(float3 a, float3 b)
+    {
+        if (a.x == b.x && a.y == b.y && a.z == b.z) return true;
+        else return false;
+    }
+
     public int maximum (int x, int y, int z)  // for getting maximum out of 3 
     {
         int a = math.max (x, y);

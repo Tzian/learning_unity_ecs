@@ -8,13 +8,12 @@ using UnityEngine;
 [UpdateAfter(typeof(InnerRangeFaceCullingSystem))]
 public class InnerRangeMeshGenSystem : JobComponentSystem
 {
-
     EntityManager entityManager;
     ComponentGroup meshDataGroup;
 
     protected override void OnCreateManager()
     {
-        entityManager = World.Active.GetOrCreateManager<EntityManager>();
+        entityManager = World.GetOrCreateManager<EntityManager>();
 
         EntityArchetypeQuery meshDataQuery = new EntityArchetypeQuery
         {

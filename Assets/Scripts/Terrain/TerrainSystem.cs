@@ -1,12 +1,11 @@
-﻿using System.Collections.Generic;
-using Unity.Collections;
+﻿using Unity.Collections;
 using Unity.Entities;
-using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
+using UnityEngine;
 
 [AlwaysUpdateSystem]
-public class TerrainSystem : JobComponentSystem
+public class TerrainSystem : ComponentSystem
 {
     EntityManager entityManager;
     Util util;
@@ -14,29 +13,31 @@ public class TerrainSystem : JobComponentSystem
     int sectorSize;
 
     public static Entity playerEntity;
-    int3 playersCurrentSector;
+    public int3 playersCurrentSector;
     int3 playersPreviousSector;
 
     public Matrix3D<Entity> sectorMatrix;
     int matrixWidth;
 
-    public bool update;
-    List<ComponentSystemBase> OnUpdateTerrainCheckSystems;
+    bool firstRun;
+
 
     protected override void OnCreateManager()
     {
-        entityManager = World.Active.GetOrCreateManager<EntityManager>();
+        entityManager = World.GetOrCreateManager<EntityManager>();  // create entity manager for the world this componentsystem is attached to
         sectorEntityArchetype = TerrainEntityFactory.CreateSectorArchetype(entityManager);
         util = new Util();
         sectorSize = TerrainSettings.sectorSize;
         matrixWidth = TerrainSettings.sectorGenerationRange * 2 + 1;
-        update = true;
+
+        firstRun = true;
+
+        // Debug.Log("Terrain systems world " + World);
     }
 
     protected override void OnStartRunning()
     {
         playersCurrentSector = GetPlayersCurrentSector();
-
         StartSectorMatrix(playersCurrentSector);
 
         playersPreviousSector = playersCurrentSector + (100 * sectorSize);
@@ -47,25 +48,27 @@ public class TerrainSystem : JobComponentSystem
         sectorMatrix.Dispose();
     }
 
-    protected override JobHandle OnUpdate(JobHandle inputDeps)
+    protected override void OnUpdate()
     {
         playersCurrentSector = GetPlayersCurrentSector();
 
-        if (playersCurrentSector.Equals(playersPreviousSector))
+        if (firstRun == true)
         {
-            return inputDeps;
+            firstRun = false;
+            CreateStartSector(playersCurrentSector);
         }
 
+        if (playersCurrentSector.Equals(playersPreviousSector))
+        {
+            return;
+        }
+
+
         EntityCommandBuffer eCBuffer = new EntityCommandBuffer(Allocator.Temp);
+        CheckSectorDrawRange(playersCurrentSector, eCBuffer);
 
         playersPreviousSector = playersCurrentSector;
 
-        GenerateSectorsInRange(playersCurrentSector);
-        RemoveOutOfRangeSectors(playersCurrentSector);
-        CheckSectorDrawRange(playersCurrentSector, eCBuffer);
-
-        
-        return inputDeps;
     }
 
     public int3 GetPlayersCurrentSector()
@@ -80,52 +83,13 @@ public class TerrainSystem : JobComponentSystem
         sectorMatrix = new Matrix3D<Entity>(matrixWidth, Allocator.Persistent, playersCurrentSector, sectorSize);
     }
 
-    void GenerateSectorsInRange(int3 playersCurrentSector)
-    {
-        int range = TerrainSettings.sectorGenerationRange * sectorSize;
-
-        for (int x = playersCurrentSector.x - range; x <= playersCurrentSector.x + range; x++)
-        {
-            for (int y = playersCurrentSector.y - range; y <= playersCurrentSector.y + range; y++)
-            {
-                for (int z = playersCurrentSector.z - range; z <= playersCurrentSector.z + range; z++)
-                {
-                    int3 sectorWorldPos = new int3(x, y, z);
-                    if (sectorMatrix.ItemIsSet(sectorWorldPos))
-                        continue;
-
-                    CreateNewSector(sectorWorldPos);
-                }
-            }
-        }
-    }
-
-    Entity CreateNewSector(int3 sectorWorldPos)
+    Entity CreateStartSector(int3 sectorWorldPos)
     {
         Entity newSectorEntity = entityManager.CreateEntity(sectorEntityArchetype);
         entityManager.SetComponentData(newSectorEntity, new Translation { Value = sectorWorldPos });
         entityManager.SetComponentData(newSectorEntity, new Sector { entity = newSectorEntity, worldPosition = sectorWorldPos });
         sectorMatrix.AddItem(newSectorEntity, sectorWorldPos);
         return newSectorEntity;
-    }
-
-    void RemoveOutOfRangeSectors(int3 playersCurrentSector)
-    {
-        int range = TerrainSettings.sectorGenerationRange;
-        for (int i = 0; i < sectorMatrix.Length; i++)
-        {
-            if (!sectorMatrix.ItemIsSet(i))
-                continue;
-
-            int3 sectorPosToCheck = sectorMatrix.IndexToWorldPosition(i);
-
-            if (!sectorMatrix.InRangeFromWorldPosition(playersCurrentSector, sectorPosToCheck, range))
-            {
-                Entity entityForRemoval = sectorMatrix.GetItem(i);
-                entityManager.AddComponentData(entityForRemoval, new SectorRemoveTag());
-                sectorMatrix.UnsetItem(i);
-            }
-        }
     }
 
     void CheckSectorDrawRange(int3 playersCurrentSector, EntityCommandBuffer eCBuffer)
@@ -150,6 +114,10 @@ public class TerrainSystem : JobComponentSystem
                 {
                     eCBuffer.RemoveComponent(sectorEntity, typeof(OuterDrawRangeSectorTag));
                 }
+                if (entityManager.HasComponent(sectorEntity, typeof(EdgeOfDrawRangeSectorTag)))
+                {
+                    eCBuffer.RemoveComponent(sectorEntity, typeof(EdgeOfDrawRangeSectorTag));
+                }
                 if (entityManager.HasComponent(sectorEntity, typeof(NotInDrawRangeSectorTag)))
                 {
                     eCBuffer.RemoveComponent(sectorEntity, typeof(NotInDrawRangeSectorTag));
@@ -164,6 +132,29 @@ public class TerrainSystem : JobComponentSystem
                 if (entityManager.HasComponent(sectorEntity, typeof(InnerDrawRangeSectorTag)))
                 {
                     eCBuffer.RemoveComponent(sectorEntity, typeof(InnerDrawRangeSectorTag));
+                }
+                if (entityManager.HasComponent(sectorEntity, typeof(EdgeOfDrawRangeSectorTag)))
+                {
+                    eCBuffer.RemoveComponent(sectorEntity, typeof(EdgeOfDrawRangeSectorTag));
+                }
+                if (entityManager.HasComponent(sectorEntity, typeof(NotInDrawRangeSectorTag)))
+                {
+                    eCBuffer.RemoveComponent(sectorEntity, typeof(NotInDrawRangeSectorTag));
+                }
+            }
+            else if (sectorMatrix.InRangeFromWorldPosition(playersCurrentSector, sectorPosToCheck, range - 1))
+            {
+                if (!entityManager.HasComponent(sectorEntity, typeof(EdgeOfDrawRangeSectorTag)))
+                {
+                    eCBuffer.AddComponent(sectorEntity, new EdgeOfDrawRangeSectorTag());
+                }
+                if (entityManager.HasComponent(sectorEntity, typeof(InnerDrawRangeSectorTag)))
+                {
+                    eCBuffer.RemoveComponent(sectorEntity, typeof(InnerDrawRangeSectorTag));
+                }
+                if (entityManager.HasComponent(sectorEntity, typeof(OuterDrawRangeSectorTag)))
+                {
+                    eCBuffer.RemoveComponent(sectorEntity, typeof(OuterDrawRangeSectorTag));
                 }
                 if (entityManager.HasComponent(sectorEntity, typeof(NotInDrawRangeSectorTag)))
                 {
@@ -183,6 +174,10 @@ public class TerrainSystem : JobComponentSystem
                 if (entityManager.HasComponent(sectorEntity, typeof(OuterDrawRangeSectorTag)))
                 {
                     eCBuffer.RemoveComponent(sectorEntity, typeof(OuterDrawRangeSectorTag));
+                }
+                if (entityManager.HasComponent(sectorEntity, typeof(EdgeOfDrawRangeSectorTag)))
+                {
+                    eCBuffer.RemoveComponent(sectorEntity, typeof(EdgeOfDrawRangeSectorTag));
                 }
             }
         }

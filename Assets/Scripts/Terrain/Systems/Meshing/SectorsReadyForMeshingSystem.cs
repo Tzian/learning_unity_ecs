@@ -14,7 +14,7 @@ public class SectorsReadyForMeshingSystem : ComponentSystem
 
     protected override void OnCreateManager()
     {
-        entityManager = World.Active.GetOrCreateManager<EntityManager>();
+        entityManager = World.GetOrCreateManager<EntityManager>();
 
         EntityArchetypeQuery squareQuery = new EntityArchetypeQuery
         {

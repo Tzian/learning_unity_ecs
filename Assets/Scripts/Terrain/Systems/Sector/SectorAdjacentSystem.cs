@@ -2,7 +2,7 @@
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
-
+using UnityEngine;
 
 [UpdateAfter(typeof(SectorGeologySystem))]
 public class SectorAdjacentSystem : ComponentSystem
@@ -18,8 +18,8 @@ public class SectorAdjacentSystem : ComponentSystem
 
     protected override void OnCreateManager()
     {
-        entityManager = World.Active.GetOrCreateManager<EntityManager>();
-        terrainSystem = World.Active.GetOrCreateManager<TerrainSystem>();
+        entityManager = World.GetOrCreateManager<EntityManager>();
+        terrainSystem = World.GetOrCreateManager<TerrainSystem>();
         sectorSize = TerrainSettings.sectorSize;
         cubeDirections = new CubeDirections();
 

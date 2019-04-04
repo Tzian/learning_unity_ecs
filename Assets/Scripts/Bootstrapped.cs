@@ -107,7 +107,7 @@ public class UpdateGroupCreator
     {
         try
         {
-          //  Debug.Log("Found System    " + type.FullName   +" for world   " + world);
+            //Debug.Log("Found System    " + type.FullName   +" for world   " + world);
             return world.GetOrCreateManager(type);
         }
         catch (Exception e)
@@ -127,6 +127,5 @@ public class TerrainGenerationGroup : ComponentSystemGroup
 
 [DisableAutoCreation]
 [AlwaysUpdateSystem]
-[UpdateBefore(typeof(TerrainGenerationGroup))]
 public class TerrainGroup : ComponentSystemGroup
 { }

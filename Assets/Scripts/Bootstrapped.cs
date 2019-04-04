@@ -1,26 +1,61 @@
-﻿using System;
+﻿using PhysicsEngine;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Rendering;
+using Unity.Transforms;
+using UnityEditor;
 using UnityEngine;
 
-public class TerrainBootstrap : ICustomBootstrap
+public class Bootstrapped : ICustomBootstrap
 {
     public static TerrainGenerationGroup tGenGroup;
     public static TerrainGroup terrainGroup;
+    public static Entity playerEntity;
+    float3 playerStartPos;
 
-    [RuntimeInitializeOnLoadMethod (RuntimeInitializeLoadType.BeforeSceneLoad)]
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     public List<Type> Initialize(List<Type> systems)
     {
-       // Debug.Log("world before we create custom worlds " + World.Active);
+        playerStartPos = new float3(0, TerrainSettings.playerStartHeight, 0);
+        SetupPlayers(playerStartPos);
+
+        SetupWorldsAndUdateGroups();
+        
+        return systems;
+    }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    public static void InitializeWithScene() { }
+
+    void SetupPlayers(float3 startPos)
+    {
+            EntityManager entityManager = World.Active.GetOrCreateManager<EntityManager>();
+
+            EntityArchetype playerSetup = PhysicsEntityFactory.CreatePlayerArchetype(entityManager);
+            playerEntity = entityManager.CreateEntity(playerSetup);
+
+            entityManager.SetComponentData(playerEntity, new Translation { Value = startPos });
+            entityManager.SetComponentData(playerEntity, new Rotation { Value = quaternion.identity });
+            entityManager.SetComponentData(playerEntity, new Velocity { Value = new float3(0, 0, 0) });
+
+            RenderMesh renderer = new RenderMesh();
+            GameObject capsule = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            renderer.mesh = capsule.GetComponent<MeshFilter>().mesh;
+            GameObject.Destroy(capsule);
+            renderer.material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/PlayerCapsuleMaterial.mat");
+
+            entityManager.AddSharedComponentData(playerEntity, renderer);
+
+    }
+
+    void SetupWorldsAndUdateGroups()
+    {
+        // Debug.Log("world before we create custom worlds " + World.Active);
         Worlds worlds = new Worlds();
         Worlds.defaultWorld = World.Active;
-
-        // setup custom world and its systems
-        World tGenWorld = new World("TerrainGenWorld");
-        tGenGroup = tGenWorld.GetOrCreateManager<TerrainGenerationGroup>();
-        UpdateGroupCreator.FindandCreateGroup(tGenWorld, "TerrainGen", tGenGroup);
-        Worlds.tGenWorld = tGenWorld;
 
         // setup terrainSystems for default world
         terrainGroup = Worlds.defaultWorld.GetOrCreateManager<TerrainGroup>();
@@ -28,14 +63,19 @@ public class TerrainBootstrap : ICustomBootstrap
 
         var simGroup = Worlds.defaultWorld.GetOrCreateManager<SimulationSystemGroup>();
         simGroup.AddSystemToUpdateList(terrainGroup);
+        simGroup.SortSystemUpdateList();
+
+
+        // setup custom world and its systems
+        World tGenWorld = new World("TerrainGenWorld");
+        tGenGroup = tGenWorld.GetOrCreateManager<TerrainGenerationGroup>();
+        UpdateGroupCreator.FindandCreateGroup(tGenWorld, "TerrainGen", tGenGroup);
+        Worlds.tGenWorld = tGenWorld;
+
         simGroup.AddSystemToUpdateList(tGenGroup);
         simGroup.SortSystemUpdateList();
-        return systems;
     }
-
-    [RuntimeInitializeOnLoadMethod (RuntimeInitializeLoadType.AfterSceneLoad)]
-    public static void InitializeWithScene () { }
- }
+}
 
 public class UpdateGroupCreator
 {
@@ -77,6 +117,8 @@ public class UpdateGroupCreator
         }
     }
 }
+
+
 
 [DisableAutoCreation]
 [UpdateAfter(typeof(TerrainGroup))]

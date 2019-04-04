@@ -7,13 +7,14 @@ using UnityEngine;
 namespace TerrainGen
 {
     [DisableAutoCreation]
+    //[UpdateAfter(typeof(TerrainGroup))]
     [UpdateInGroup(typeof(TerrainGenerationGroup))]
     public class TerrainGenStartSystem : ComponentSystem
     {
         EntityManager tGenEntityManager;
         EntityArchetype sectorEntityArchetype;
         TerrainSystem terrainSystem;
-        public static Entity playerEntity;
+        Entity playerEntity;
         int3 playersCurrentSector;
         int3 playersPreviousSector;
 
@@ -26,6 +27,9 @@ namespace TerrainGen
             tGenEntityManager = World.GetOrCreateManager<EntityManager>();
             sectorEntityArchetype = TerrainEntityFactory.CreateSectorArchetype(tGenEntityManager);
             sectorSize = TerrainSettings.sectorSize;
+            playerEntity = Bootstrapped.playerEntity;
+            terrainSystem = Worlds.defaultWorld.GetExistingManager<TerrainSystem>();
+
             util = new Util();
             firstRun = true;
         }
@@ -33,18 +37,12 @@ namespace TerrainGen
         protected override void OnStartRunning()
         {
             //Debug.Log("system1's onStartRunning ");
-            
+            playersCurrentSector = GetPlayersCurrentSector();
+            playersPreviousSector = playersCurrentSector + (100 * sectorSize);
         }
 
         protected override void OnUpdate()
         {
-            if (terrainSystem == null)
-            {
-                terrainSystem = Worlds.defaultWorld.GetExistingManager<TerrainSystem>();
-                playerEntity = TerrainSystem.playerEntity;
-                return;
-            }
-
             if (terrainSystem.sectorMatrix.Length == 0)
                 return;
 
@@ -53,7 +51,6 @@ namespace TerrainGen
             if (firstRun)
             {
                 firstRun = false;
-                playersPreviousSector = playersCurrentSector + (100 * sectorSize);
                 CreateStartingSectors(playersCurrentSector);
             }
             playersPreviousSector = playersCurrentSector;

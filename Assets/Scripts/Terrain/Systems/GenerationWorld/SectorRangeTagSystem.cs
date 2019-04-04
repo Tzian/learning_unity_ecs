@@ -27,6 +27,9 @@ namespace TerrainGen
         protected override void OnCreateManager()
         {
             tGenEntityManager = World.GetOrCreateManager<EntityManager>();
+            terrainSystem = Worlds.defaultWorld.GetExistingManager<TerrainSystem>();
+            playerEntity = Bootstrapped.playerEntity;
+
             sectorSize = TerrainSettings.sectorSize;
             util = new Util();
             range = TerrainSettings.sectorGenerationRange;
@@ -40,12 +43,6 @@ namespace TerrainGen
 
         protected override void OnUpdate()
         {
-            if (terrainSystem == null)
-            {
-                terrainSystem = Worlds.defaultWorld.GetExistingManager<TerrainSystem>();
-                playerEntity = TerrainSystem.playerEntity;
-                return;
-            }
             playersCurrentSector = GetPlayersCurrentSector();
 
             NativeArray<ArchetypeChunk> dataChunks = sectorRangeCheckGroup.CreateArchetypeChunkArray(Allocator.TempJob);

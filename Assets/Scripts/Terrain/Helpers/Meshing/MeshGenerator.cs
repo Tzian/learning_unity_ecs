@@ -21,8 +21,16 @@ struct MeshGenerator
 
     public void Execute(int i)
     {
+
         // skip blocks that have no exposed sides
-        if (blockFaces[i].count == 0) return;
+        if (blockFaces[i].count == 0)
+        {
+            return;
+        }
+        else
+        {
+
+        }
 
         // get blocks atlasID
         ushort atlasID = blockFaces[i].atlasID;

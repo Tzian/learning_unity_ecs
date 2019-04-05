@@ -15,14 +15,11 @@ namespace TerrainGen
 
         protected override void OnCreateManager()
         {
-           // Debug.Log(" this system InnerRangeMeshGenSystem  " + World);
-
             entityManager = World.GetOrCreateManager<EntityManager>();
 
             EntityArchetypeQuery meshDataQuery = new EntityArchetypeQuery
             {
-                None = new ComponentType[] { typeof(NotInDrawRangeSectorTag), typeof(OuterDrawRangeSectorTag) },
-                All = new ComponentType[] { typeof(Sector), typeof(SectorVisFacesCount) }
+                All = new ComponentType[] { typeof(Sector), typeof(SectorVisFacesCount), typeof(BlockFaces), typeof(InnerDrawRangeSectorTag) }
             };
             meshDataGroup = GetComponentGroup(meshDataQuery);
         }
@@ -37,7 +34,6 @@ namespace TerrainGen
                 return inputDeps;
             }
 
-            EntityCommandBuffer eCBuffer = new EntityCommandBuffer(Allocator.TempJob);
 
             ArchetypeChunkEntityType entityType = GetArchetypeChunkEntityType();
             ArchetypeChunkComponentType<Sector> sectorType = GetArchetypeChunkComponentType<Sector>(true);
@@ -56,9 +52,11 @@ namespace TerrainGen
                 BufferAccessor<Block> blockAccessor = dataChunk.GetBufferAccessor(blocksType);
                 BufferAccessor<BlockFaces> facesAccessor = dataChunk.GetBufferAccessor(facesType);
 
+                EntityCommandBuffer eCBuffer = new EntityCommandBuffer(Allocator.TempJob);
+
                 for (int e = 0; e < entities.Length; e++)
                 {
-                    var meshDataJob = new MeshDataJob()
+                    var meshDataJob = new MeshDataJob
                     {
                         ECBuffer = eCBuffer,
                         entity = entities[e],
@@ -66,18 +64,17 @@ namespace TerrainGen
                         sector = sectors[e],
 
                         blocks = new NativeArray<Block>(blockAccessor[e].AsNativeArray(), Allocator.TempJob),
-                        blockFaces = new NativeArray<BlockFaces>(facesAccessor[e].AsNativeArray(), Allocator.TempJob),
+                        blockFaces = new NativeArray<BlockFaces>(facesAccessor[e].AsNativeArray(), Allocator.TempJob)
 
                     }.Schedule(inputDeps);
                     meshDataJob.Complete();
                 }
-            }
-            eCBuffer.Playback(entityManager);
-            eCBuffer.Dispose();
+                eCBuffer.Playback(entityManager);
+                eCBuffer.Dispose();
+                dataChunks.Dispose();
 
-            dataChunks.Dispose();
+            }
             return inputDeps;
         }
-
     }
 }

@@ -1,7 +1,7 @@
 ﻿using Unity.Entities;
 
 // sector tags for job filtering from generation to drawn
-
+public struct GetSectorDrawRange : IComponentData { }
 public struct GetSectorNoise : IComponentData { }
 public struct GetUniqueSurfaceCells : IComponentData { }
 public struct GetSectorTopography : IComponentData { }

@@ -23,16 +23,16 @@ namespace TerrainGen
 
         protected override void OnCreateManager()
         {
-           // Debug.Log(" this system SectorAdjacentSystem  " + World);
+            // Debug.Log(" this system SectorAdjacentSystem  " + World);
 
             entityManager = World.GetOrCreateManager<EntityManager>();
-            terrainSystem = Worlds.defaultWorld.GetExistingManager<TerrainSystem>();
+            terrainSystem = Bootstrapped.defaultWorld.GetExistingManager<TerrainSystem>();
             sectorSize = TerrainSettings.sectorSize;
             cubeDirections = new CubeDirections();
 
             EntityArchetypeQuery adjSectorsQuery = new EntityArchetypeQuery
             {
-                Any = new ComponentType[] { typeof(InnerDrawRangeSectorTag), typeof(OuterDrawRangeSectorTag) },
+                Any = new ComponentType[] { typeof(InnerDrawRangeSectorTag), typeof(OuterDrawRangeSectorTag), typeof(EdgeOfDrawRangeSectorTag) },
                 None = new ComponentType[] { typeof(NotInDrawRangeSectorTag), typeof(GetSectorTopography), typeof(GenerateSectorGeology) },
                 All = new ComponentType[] { typeof(Sector), typeof(GetAdjacentSectors) }
             };

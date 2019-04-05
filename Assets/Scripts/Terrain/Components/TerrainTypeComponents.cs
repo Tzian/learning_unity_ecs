@@ -8,6 +8,11 @@ public struct Sector : IComponentData
     public float3 worldPosition;
 }
 
+public struct SectorDrawRange : IComponentData
+{
+    public sbyte sectorDrawRange;
+}
+
 public struct AdjacentSectors : IComponentData
 {
     public Entity north;

@@ -15,11 +15,7 @@ public struct MeshDataJob : IJob
 
     public void Execute()
     {
-        if(counts.vertCount > 0)
-        {
-
-        }
-        DynamicBuffer<MeshVert> vertBuffer = ECBuffer.AddBuffer<MeshVert>(entity);
+        DynamicBuffer<MeshVert> vertBuffer = ECBuffer.AddBuffer<MeshVert>( entity);
         vertBuffer.ResizeUninitialized(counts.vertCount);
         DynamicBuffer<MeshUv> uvBuffer = ECBuffer.AddBuffer<MeshUv>(entity);
         uvBuffer.ResizeUninitialized(counts.vertCount);
@@ -52,5 +48,6 @@ public struct MeshDataJob : IJob
 
         ECBuffer.RemoveComponent<SectorVisFacesCount>(entity);
         ECBuffer.RemoveComponent<BlockFaces>(entity);
+        ECBuffer.AddComponent(entity, new ReadyForWorldMove());
     }
 }

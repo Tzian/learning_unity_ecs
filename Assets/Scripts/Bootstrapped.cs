@@ -11,6 +11,8 @@ using UnityEngine;
 
 public class Bootstrapped : ICustomBootstrap
 {
+    public static World defaultWorld;
+    public static World tGenWorld;
     public static TerrainGenerationGroup tGenGroup;
     public static TerrainGroup terrainGroup;
     public static Entity playerEntity;
@@ -23,7 +25,6 @@ public class Bootstrapped : ICustomBootstrap
         SetupPlayers(playerStartPos);
 
         SetupWorldsAndUdateGroups();
-        
         return systems;
     }
 
@@ -48,29 +49,24 @@ public class Bootstrapped : ICustomBootstrap
             renderer.material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/PlayerCapsuleMaterial.mat");
 
             entityManager.AddSharedComponentData(playerEntity, renderer);
-
     }
 
     void SetupWorldsAndUdateGroups()
     {
-        // Debug.Log("world before we create custom worlds " + World.Active);
-        Worlds worlds = new Worlds();
-        Worlds.defaultWorld = World.Active;
+        defaultWorld = World.Active;
 
         // setup terrainSystems for default world
-        terrainGroup = Worlds.defaultWorld.GetOrCreateManager<TerrainGroup>();
-        UpdateGroupCreator.FindandCreateGroup(Worlds.defaultWorld, "Terrain", terrainGroup);
+        terrainGroup = defaultWorld.GetOrCreateManager<TerrainGroup>();
+        UpdateGroupCreator.FindandCreateGroup(defaultWorld, "Terrain", terrainGroup);
 
-        var simGroup = Worlds.defaultWorld.GetOrCreateManager<SimulationSystemGroup>();
+        var simGroup = defaultWorld.GetOrCreateManager<SimulationSystemGroup>();
         simGroup.AddSystemToUpdateList(terrainGroup);
         simGroup.SortSystemUpdateList();
 
-
         // setup custom world and its systems
-        World tGenWorld = new World("TerrainGenWorld");
+        tGenWorld = new World("TerrainGenWorld");
         tGenGroup = tGenWorld.GetOrCreateManager<TerrainGenerationGroup>();
         UpdateGroupCreator.FindandCreateGroup(tGenWorld, "TerrainGen", tGenGroup);
-        Worlds.tGenWorld = tGenWorld;
 
         simGroup.AddSystemToUpdateList(tGenGroup);
         simGroup.SortSystemUpdateList();
@@ -117,8 +113,6 @@ public class UpdateGroupCreator
         }
     }
 }
-
-
 
 [DisableAutoCreation]
 [UpdateAfter(typeof(TerrainGroup))]

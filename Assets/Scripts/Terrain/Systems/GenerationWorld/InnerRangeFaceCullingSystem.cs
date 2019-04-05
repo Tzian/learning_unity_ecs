@@ -21,8 +21,6 @@ namespace TerrainGen
 
         protected override void OnCreateManager()
         {
-           // Debug.Log(" this system InnerRangeFaceCullingSystem  " + World);
-
             entityManager = World.GetOrCreateManager<EntityManager>();
             util = new Util();
             cubeDirections = new CubeDirections();
@@ -30,14 +28,10 @@ namespace TerrainGen
 
             EntityArchetypeQuery sectorQuery = new EntityArchetypeQuery
             {
-                None = new ComponentType[] { typeof(NotInDrawRangeSectorTag), typeof(OuterDrawRangeSectorTag) },
-                All = new ComponentType[] { typeof(Sector), typeof(DrawMeshTag), typeof(AdjacentSectors), typeof(NeighboursAreReady) }
+                All = new ComponentType[] { typeof(Sector), typeof(DrawMeshTag), typeof(AdjacentSectors), typeof(NeighboursAreReady), typeof(InnerDrawRangeSectorTag) }
             };
             meshGroup = GetComponentGroup(sectorQuery);
-
-
         }
-
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
@@ -86,19 +80,19 @@ namespace TerrainGen
                     var facesJob = new FacesJob()
                     {
                         ECBuffer = eCBuffer,
-                        entity = entity,
+                        Entity = entity,
 
-                        sectorSize = sectorSize,
-                        directions = directions,
-                        util = util,
+                        SectorSize = sectorSize,
+                        Directions = directions,
+                        Util = util,
 
-                        current = current,
-                        northNeighbour = northNeighbour,
-                        southNeighbour = southNeighbour,
-                        eastNeighbour = eastNeighbour,
-                        westNeighbour = westNeighbour,
-                        upNeighbour = upNeighbour,
-                        downNeighbour = downNeighbour
+                        Current = current,
+                        NorthNeighbour = northNeighbour,
+                        SouthNeighbour = southNeighbour,
+                        EastNeighbour = eastNeighbour,
+                        WestNeighbour = westNeighbour,
+                        UpNeighbour = upNeighbour,
+                        DownNeighbour = downNeighbour
 
                     }.Schedule(inputDeps);
                     facesJob.Complete();

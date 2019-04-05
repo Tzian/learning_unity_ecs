@@ -15,7 +15,7 @@ namespace Terrain
 
         protected override void OnCreateManager()
         {
-            entityManager = Worlds.defaultWorld.GetOrCreateManager<EntityManager>();
+            entityManager = Bootstrapped.defaultWorld.GetOrCreateManager<EntityManager>();
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)

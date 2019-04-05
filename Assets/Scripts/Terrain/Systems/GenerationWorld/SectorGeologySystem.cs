@@ -1,7 +1,6 @@
 ﻿using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
-using UnityEngine;
 
 namespace TerrainGen
 {
@@ -11,47 +10,41 @@ namespace TerrainGen
     public class SectorGeologySystem : JobComponentSystem
     {
         EntityManager entityManager;
-        Util util;
         int sectorSize;
 
         protected override void OnCreateManager()
         {
-           // Debug.Log(" this system  SectorGeologySystem   " + World);
-
             entityManager = World.GetOrCreateManager<EntityManager>();
             sectorSize = TerrainSettings.sectorSize;
-            util = new Util();
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            EntityCommandBuffer eCBuffer = new EntityCommandBuffer(Allocator.Temp);
+            EntityCommandBuffer eCBuffer = new EntityCommandBuffer(Allocator.TempJob);
 
             NativeQueue<Entity> entitiesForTagRemoval = new NativeQueue<Entity>(Allocator.TempJob);
 
-            var sectorGeologyJob = new SectorGeologyJob
+            new RemoveGenerateSectorGeologyTagJob
             {
                 EntitiesForTagRemoval = entitiesForTagRemoval,
+                ECBuffer = eCBuffer
+
+            }.Schedule(new SectorGeologyJob
+            {
+                EntitiesForTagRemoval = entitiesForTagRemoval.ToConcurrent(),
                 BlockBufferFromSectorEntity = GetBufferFromEntity<Block>(false),
                 TopographyBufferFromSectorEntity = GetBufferFromEntity<Topography>(true),
-                Util = util,
+                Util = new Util(),
                 SectorSize = sectorSize,
                 DirtLayerThickness = 3
 
-            }.Schedule(this, inputDeps);
-            sectorGeologyJob.Complete();
-
-            for (int i = 0; i < entitiesForTagRemoval.Count; i++)
-            {
-                Entity sectorEntity = entitiesForTagRemoval.Dequeue();
-                eCBuffer.RemoveComponent(sectorEntity, typeof(GenerateSectorGeology));
-            }
-            entitiesForTagRemoval.Dispose();
+            }.Schedule(this, inputDeps)).Complete();
 
             eCBuffer.Playback(entityManager);
             eCBuffer.Dispose();
+            entitiesForTagRemoval.Dispose();
 
-            return sectorGeologyJob;
+            return inputDeps;
         }
     }
 }

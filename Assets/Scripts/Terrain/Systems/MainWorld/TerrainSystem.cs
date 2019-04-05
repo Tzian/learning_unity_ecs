@@ -29,7 +29,7 @@ namespace Terrain
 
         protected override void OnCreateManager()
         {
-            entityManager = Worlds.defaultWorld.GetOrCreateManager<EntityManager>();  
+            entityManager = Bootstrapped.defaultWorld.GetOrCreateManager<EntityManager>();  
             sectorEntityArchetype = TerrainEntityFactory.CreateSectorArchetype(entityManager);
             util = new Util();
             sectorSize = TerrainSettings.sectorSize;

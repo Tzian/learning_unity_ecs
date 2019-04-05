@@ -1,13 +1,11 @@
-﻿using Unity.Entities;
+﻿using Terrain;
+using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
-using Terrain;
-using UnityEngine;
 
 namespace TerrainGen
 {
     [DisableAutoCreation]
-    //[UpdateAfter(typeof(TerrainGroup))]
     [UpdateInGroup(typeof(TerrainGenerationGroup))]
     public class TerrainGenStartSystem : ComponentSystem
     {
@@ -28,7 +26,7 @@ namespace TerrainGen
             sectorEntityArchetype = TerrainEntityFactory.CreateSectorArchetype(tGenEntityManager);
             sectorSize = TerrainSettings.sectorSize;
             playerEntity = Bootstrapped.playerEntity;
-            terrainSystem = Worlds.defaultWorld.GetExistingManager<TerrainSystem>();
+            terrainSystem = Bootstrapped.defaultWorld.GetExistingManager<TerrainSystem>();
 
             util = new Util();
             firstRun = true;
@@ -58,7 +56,7 @@ namespace TerrainGen
 
         public int3 GetPlayersCurrentSector()
         {
-            EntityManager eM = Worlds.defaultWorld.GetExistingManager<EntityManager>();
+            EntityManager eM = Bootstrapped.defaultWorld.GetExistingManager<EntityManager>();
             float3 playerPosition = eM.GetComponentData<Translation>(playerEntity).Value;
             float3 currentSector = util.GetSectorPosition(playerPosition, sectorSize);
             return (int3)currentSector;
@@ -88,6 +86,7 @@ namespace TerrainGen
             Entity newSectorEntity = tGenEntityManager.CreateEntity(sectorEntityArchetype);
             tGenEntityManager.SetComponentData(newSectorEntity, new Translation { Value = sectorWorldPos });
             tGenEntityManager.SetComponentData(newSectorEntity, new Sector { entity = newSectorEntity, worldPosition = sectorWorldPos });
+            tGenEntityManager.AddComponentData(newSectorEntity, new SectorDrawRange { sectorDrawRange = -1 });
             terrainSystem.sectorMatrix.AddItem(newSectorEntity, sectorWorldPos);
             return newSectorEntity;
         }

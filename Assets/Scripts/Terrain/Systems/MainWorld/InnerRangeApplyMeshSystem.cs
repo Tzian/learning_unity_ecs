@@ -17,14 +17,11 @@ namespace Terrain
 
         protected override void OnCreateManager()
         {
-            // Debug.Log(" this system InnerRangeApplyMeshSystem  " + World);
-
             entityManager = World.GetOrCreateManager<EntityManager>();
             material = TerrainSettings.terrainMaterial;
             EntityArchetypeQuery applyMeshQuery = new EntityArchetypeQuery
             {
-                None = new ComponentType[] { typeof(NotInDrawRangeSectorTag), typeof(OuterDrawRangeSectorTag) },
-                All = new ComponentType[] { typeof(Sector), typeof(MeshVert) }
+                All = new ComponentType[] { typeof(Sector), typeof(MeshVert), typeof(InnerDrawRangeSectorTag), typeof(ReadyForWorldMove) }
             };
             applyMeshGroup = GetComponentGroup(applyMeshQuery);
         }
@@ -64,6 +61,7 @@ namespace Terrain
                     eCBuffer.RemoveComponent(entity, typeof(MeshVert));
                     eCBuffer.RemoveComponent(entity, typeof(MeshTri));
                     eCBuffer.RemoveComponent(entity, typeof(MeshUv));
+                    eCBuffer.RemoveComponent(entity, typeof(ReadyForWorldMove));
                 }
             }
 

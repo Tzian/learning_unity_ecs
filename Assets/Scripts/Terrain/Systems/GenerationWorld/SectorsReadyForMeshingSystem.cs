@@ -14,8 +14,6 @@ namespace TerrainGen
 
         protected override void OnCreateManager()
         {
-          //  Debug.Log(" this system SectorsReadyForMeshingSystem" + World);
-
             entityManager = World.GetOrCreateManager<EntityManager>();
 
             EntityArchetypeQuery squareQuery = new EntityArchetypeQuery
@@ -25,7 +23,6 @@ namespace TerrainGen
             };
             meshReadyGroup = GetComponentGroup(squareQuery);
         }
-
 
         protected override void OnUpdate()
         {

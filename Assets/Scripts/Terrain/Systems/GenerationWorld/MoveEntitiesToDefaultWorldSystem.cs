@@ -5,7 +5,7 @@ namespace TerrainGen
 {
     [DisableAutoCreation]
     [UpdateInGroup(typeof(TerrainGenerationGroup))]
-    [UpdateAfter(typeof(SectorRangeTagSystem))]
+    [UpdateAfter(typeof(InnerRangeMeshGenSystem))]
     public class MoveEntitiesToDefaultWorldSystem : ComponentSystem
     {
         EntityManager tGenEntityManager;
@@ -13,7 +13,7 @@ namespace TerrainGen
         ChunkIterationSystem chunkIterationSystem;
 
         ComponentGroup entitiesForMovingGroup;
-        NativeArray<Entity> entities; 
+        NativeArray<Entity> entities;
 
         protected override void OnCreateManager()
         {
@@ -22,11 +22,9 @@ namespace TerrainGen
 
             EntityArchetypeQuery entitiesForMovingQuery = new EntityArchetypeQuery
             {
-                All = new ComponentType[] { typeof(Sector), typeof (InnerDrawRangeSectorTag), typeof(ReadyForWorldMove) }
+                All = new ComponentType[] { typeof(Sector), typeof(InnerDrawRangeSectorTag), typeof(ReadyForWorldMove) }
             };
             entitiesForMovingGroup = GetComponentGroup(entitiesForMovingQuery);
-
-            //Debug.Log("system2's created with world    " + this.World);
         }
 
         protected override void OnUpdate()
@@ -36,13 +34,13 @@ namespace TerrainGen
 
             NativeArray<EntityRemapUtility.EntityRemapInfo> remapping = tGenEntityManager.CreateEntityRemapArray(Allocator.TempJob);
 
-            EntityManager entityManager = Worlds.defaultWorld.GetExistingManager<EntityManager>();
-            entityManager.MoveEntitiesFrom(tGenEntityManager, entitiesForMovingGroup , remapping);
+            EntityManager entityManager = Bootstrapped.defaultWorld.GetExistingManager<EntityManager>();
+            entityManager.MoveEntitiesFrom(tGenEntityManager, entitiesForMovingGroup, remapping);
 
             for (int i = 0; i < entities.Length; i++)
             {
                 entities[i] = EntityRemapUtility.RemapEntity(ref remapping, entities[i]);
-                    
+
             }
 
             remapping.Dispose();
@@ -50,6 +48,6 @@ namespace TerrainGen
         }
     }
 
-   
+
 
 }

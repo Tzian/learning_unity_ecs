@@ -21,7 +21,126 @@ public struct RemoveSectorJob : IJobProcessComponentDataWithEntity<Sector>
 
 
 [BurstCompile]
-[RequireComponentTag (typeof (GetSectorNoise))]
+[RequireComponentTag(typeof(GetSectorDrawRange))]
+public struct SectorDrawRangeJob : IJobProcessComponentDataWithEntity<Sector, Translation, SectorDrawRange>
+{
+    public NativeQueue<Entity>.Concurrent TagRemovalQueue;
+    [ReadOnly] public Util Util;
+    [ReadOnly] public int SectorSize;
+    [ReadOnly] public int Range;
+    [ReadOnly] public int3 PlayersCurrentSector;
+
+    public void Execute(Entity entity, int index, ref Sector sector, ref Translation translation, ref SectorDrawRange drawRange)
+    {
+        int3 position = (int3)translation.Value;
+
+        if (Util.SectorMatrixInRangeFromWorldPositionCheck(PlayersCurrentSector, position, PlayersCurrentSector, Range - 5, SectorSize))
+        {
+            if (drawRange.sectorDrawRange == 0) return;
+
+            drawRange.sectorDrawRange = 0;
+        }
+        else if (Util.SectorMatrixInRangeFromWorldPositionCheck(PlayersCurrentSector, position, PlayersCurrentSector, Range - 3, SectorSize))
+        {
+            if (drawRange.sectorDrawRange == 1) return;
+
+            drawRange.sectorDrawRange = 1;
+        }
+        else if (Util.SectorMatrixInRangeFromWorldPositionCheck(PlayersCurrentSector, position, PlayersCurrentSector, Range - 1, SectorSize))
+        {
+            if (drawRange.sectorDrawRange == 2) return;
+
+            drawRange.sectorDrawRange = 2;
+        }
+        else
+        {
+            if (drawRange.sectorDrawRange == 3) return;
+
+            drawRange.sectorDrawRange = 3;
+        }
+
+        TagRemovalQueue.Enqueue(entity);
+    }
+}
+
+// Not burstable
+public struct RemoveGetSectorDrawRangeTagJob : IJob
+{
+    public NativeQueue<Entity> EntitiesForTagRemoval;
+    public EntityCommandBuffer ECBuffer;
+
+    public void Execute()
+    {
+        while (EntitiesForTagRemoval.TryDequeue(out Entity myEntity))
+        {
+            ECBuffer.RemoveComponent(myEntity, typeof(GetSectorDrawRange));
+        }
+    }
+}
+
+[BurstCompile]
+[ExcludeComponent(typeof(InnerDrawRangeSectorTag), typeof(OuterDrawRangeSectorTag), typeof(EdgeOfDrawRangeSectorTag), typeof(NotInDrawRangeSectorTag))]
+public struct SectorDrawRangeTagJob : IJobProcessComponentDataWithEntity<Sector, SectorDrawRange>
+{
+    public NativeQueue<Entity>.Concurrent EntitiesForApplyInnerDrawRangeTag;
+    public NativeQueue<Entity>.Concurrent EntitiesForApplyOuterDrawRangeTag;
+    public NativeQueue<Entity>.Concurrent EntitiesForApplyEdgeDrawRangeTag;
+    public NativeQueue<Entity>.Concurrent EntitiesForApplyNotInDrawRangeTag;
+
+    public void Execute(Entity sectorEntity, int index, ref Sector sector, ref SectorDrawRange drawRange)
+    {
+        if (drawRange.sectorDrawRange == 0)
+        {
+            EntitiesForApplyInnerDrawRangeTag.Enqueue(sectorEntity);
+        }
+        else if (drawRange.sectorDrawRange == 1)
+        {
+            EntitiesForApplyOuterDrawRangeTag.Enqueue(sectorEntity);
+        }
+        else if (drawRange.sectorDrawRange == 2)
+        {
+            EntitiesForApplyEdgeDrawRangeTag.Enqueue(sectorEntity);
+        }
+        else
+        {
+            EntitiesForApplyNotInDrawRangeTag.Enqueue(sectorEntity);
+        }
+    }
+}
+
+// Not burstable
+public struct ApplyNewSectorDrawRangeTagJob : IJob
+{
+    public NativeQueue<Entity> EntitiesForApplyInnerDrawRangeTag;
+    public NativeQueue<Entity> EntitiesForApplyOuterDrawRangeTag;
+    public NativeQueue<Entity> EntitiesForApplyEdgeDrawRangeTag;
+    public NativeQueue<Entity> EntitiesForApplyNotInDrawRangeTag;
+    public EntityCommandBuffer ECBuffer;
+
+    public void Execute()
+    {
+        while (EntitiesForApplyInnerDrawRangeTag.TryDequeue(out Entity myEntity))
+        {
+            ECBuffer.AddComponent(myEntity, new InnerDrawRangeSectorTag());
+        }
+        while (EntitiesForApplyOuterDrawRangeTag.TryDequeue(out Entity myEntity))
+        {
+            ECBuffer.AddComponent(myEntity, new OuterDrawRangeSectorTag());
+
+        }
+        while (EntitiesForApplyEdgeDrawRangeTag.TryDequeue(out Entity myEntity))
+        {
+            ECBuffer.AddComponent(myEntity, new EdgeOfDrawRangeSectorTag());
+        }
+        while (EntitiesForApplyNotInDrawRangeTag.TryDequeue(out Entity myEntity))
+        {
+            ECBuffer.AddComponent(myEntity, new NotInDrawRangeSectorTag());
+        }
+    }
+}
+
+[BurstCompile]
+[RequireComponentTag(typeof(GetSectorNoise))]
 public struct SectorNoiseJob : IJobProcessComponentDataWithEntity<Sector, Translation>
 {
     [NativeDisableParallelForRestriction]
@@ -32,27 +151,26 @@ public struct SectorNoiseJob : IJobProcessComponentDataWithEntity<Sector, Transl
     [ReadOnly] public WorleyNoiseGenerator Noise;
 
 
-    public void Execute (Entity sectorEntity, int index, ref Sector sector, ref Translation position)
+    public void Execute(Entity sectorEntity, int index, ref Sector sector, ref Translation position)
     {
-        DynamicBuffer<WorleySurfaceNoise> surfaceNoiseBuffer = SurfaceNoiseBufferFrom [sectorEntity];
+        DynamicBuffer<WorleySurfaceNoise> surfaceNoiseBuffer = SurfaceNoiseBufferFrom[sectorEntity];
 
-        int requiredSize = (int) math.pow (SectorSize, 2);
+        int requiredSize = (int)math.pow(SectorSize, 2);
 
         if (surfaceNoiseBuffer.Length < requiredSize)
-            surfaceNoiseBuffer.ResizeUninitialized (requiredSize);
+            surfaceNoiseBuffer.ResizeUninitialized(requiredSize);
 
         float3 sectorPos = position.Value;
 
         for (int i = 0; i < surfaceNoiseBuffer.Length; i++)
         {
-            float3 sCellWPos = Util.Unflatten2D (i, SectorSize) + new float3 (sectorPos.x, 0, sectorPos.z);  // remove Y
+            float3 sCellWPos = Util.Unflatten2D(i, SectorSize) + new float3(sectorPos.x, 0, sectorPos.z);  // remove Y
 
-            WorleySurfaceNoise worleySurfaceNoise = Noise.GetEdgeData (sCellWPos.x, sCellWPos.z);
-            surfaceNoiseBuffer [i] = worleySurfaceNoise;
+            WorleySurfaceNoise worleySurfaceNoise = Noise.GetEdgeData(sCellWPos.x, sCellWPos.z);
+            surfaceNoiseBuffer[i] = worleySurfaceNoise;
         }
     }
 }
-
 
 [BurstCompile]
 [RequireComponentTag (typeof (GetSectorNoise))]
@@ -60,8 +178,8 @@ public struct SectorGetIndividualCellsJob : IJobProcessComponentDataWithEntity<S
 {
     [NativeDisableParallelForRestriction]
     public BufferFromEntity<SurfaceCell> SurfaceCellBufferFrom;
-    [NativeDisableParallelForRestriction]
-    public NativeQueue<Entity> SectorEntities;
+
+    public NativeQueue<Entity>.Concurrent SectorEntities;
 
     [ReadOnly]
     public BufferFromEntity<WorleySurfaceNoise> SurfaceNoiseBufferFrom;
@@ -90,189 +208,17 @@ public struct SectorGetIndividualCellsJob : IJobProcessComponentDataWithEntity<S
     }
 }
 
-
-[BurstCompile]
-public struct GetUniqueSurfaceCellsJob : IJob
+// Not burstable
+public struct RemoveGetSectorNoiseTagJob : IJob
 {
-    [ReadOnly]
-    public NativeArray<Entity> Entities;
-
-    [NativeDisableParallelForRestriction]
-    public BufferFromEntity<SurfaceCell> SurfaceCellBufferFrom;
-    [NativeDisableParallelForRestriction]
-    public NativeList<SurfaceCell> UniqueCellList;
-    [NativeDisableParallelForRestriction]
     public NativeQueue<Entity> EntitiesForTagRemoval;
+    public EntityCommandBuffer ECBuffer;
 
-    public void Execute ()
+    public void Execute()
     {
-        for (int e = 0; e < Entities.Length; e++)
+        while (EntitiesForTagRemoval.TryDequeue(out Entity myEntity))
         {
-            Entity sectorEntity = Entities[e];
-
-            DynamicBuffer<SurfaceCell> surfaceCellBuffer = SurfaceCellBufferFrom[sectorEntity];
-
-            for (int i = 0; i < surfaceCellBuffer.Length; i++)
-            {
-                SurfaceCell currentCell = surfaceCellBuffer[i];
-
-                if (!UniqueSurfaceCellsBufferContainsCurrentCell(UniqueCellList, currentCell))
-                {
-                    UniqueCellList.Add(currentCell);
-                }
-            }
-
-            surfaceCellBuffer.CopyFrom(UniqueCellList);
-            UniqueCellList.Clear();
-
-            EntitiesForTagRemoval.Enqueue(sectorEntity);
+            ECBuffer.RemoveComponent(myEntity, typeof(GetSectorNoise));
         }
-    }
-
-    bool UniqueSurfaceCellsBufferContainsCurrentCell (NativeList<SurfaceCell> UniqueCellList, SurfaceCell currentCell)
-    {
-        for (int i = 0; i < UniqueCellList.Length; i++)
-        {
-            SurfaceCell checkCell = UniqueCellList[i];
-            if (checkCell.indexInBuffer.Equals(currentCell.indexInBuffer))
-            {
-                return true;
-            }
-        }
-        return false;
     }
 }
-
-
-[BurstCompile]
-[ExcludeComponent(typeof(GetSectorNoise))]
-[RequireComponentTag (typeof (GetSectorTopography))]
-public struct GetStartingTopograpnyJob : IJobProcessComponentDataWithEntity<Sector>
-{
-    [NativeDisableParallelForRestriction]
-    public NativeQueue<Entity> EntitiesForTagRemoval;
-
-    [ReadOnly]
-    public BufferFromEntity<WorleySurfaceNoise> SurfaceNoiseBufferFrom;
-    [NativeDisableParallelForRestriction]
-    public BufferFromEntity<Topography> TopographyBufferFrom;
-
-    public TopographyTypeUtil TTUtil;
-    public Util Util;
-    public int SectorSize;
-    public int MinSurfaceHeight;
-    public int MaxSurfaceHeight;
-
-    public void Execute (Entity sectorEntity, int index, ref Sector sector)
-    {
-
-        DynamicBuffer<WorleySurfaceNoise> surfaceCellBuffer = SurfaceNoiseBufferFrom [sectorEntity];
-        DynamicBuffer<Topography> topographyBuffer = TopographyBufferFrom [sectorEntity];
-        topographyBuffer.ResizeUninitialized ((int) math.pow (SectorSize, 2));
-
-        for (int i = 0; i < topographyBuffer.Length; i++)
-        {
-            int3 worldPosition = (int3) (sector.worldPosition + Util.Unflatten2D (i, SectorSize));
-            Topography heightComponent = GetStartingSurfaceCellHeight(surfaceCellBuffer[i], worldPosition);
-            topographyBuffer[i] = heightComponent;
-        }
-        EntitiesForTagRemoval.Enqueue(sectorEntity);
-    }
-
-    public Topography GetStartingSurfaceCellHeight(WorleySurfaceNoise surfaceCell, int3 worldPosition)
-    {
-        float cellHeight = surfaceCell.distance2Edge;
-        float scale = MaxSurfaceHeight * (cellHeight / 2);
-
-        float surfaceHeight = scale;  // start min surface height
-        float adjSurfaceHeight = scale;
-
-        if (surfaceHeight < MinSurfaceHeight)
-            surfaceHeight = MinSurfaceHeight;
-        if (surfaceHeight > MaxSurfaceHeight)
-            surfaceHeight = MaxSurfaceHeight;
-
-        return new Topography
-        {
-            surfaceHeight = surfaceHeight,
-            dist2Edge = surfaceCell.distance2Edge,
-            adjSurfaceHeight = adjSurfaceHeight,
-            topopgraphyType = (int)TTUtil.TerrainType(surfaceCell.currentSurfaceCellValue),
-            adjTopographyType = (int)TTUtil.TerrainType(surfaceCell.adjacentSurfaceCellValue),
-
-        };
-    }
-}
-
-//[ExcludeComponent(typeof(GetSectorNoise))]
-//[RequireComponentTag(typeof(GetSectorTopography))]
-//public struct SectorAddNoiseToSurfaceHeightJob : IJobProcessComponentDataWithEntity<Sector>
-//{
-
-//    [NativeDisableParallelForRestriction]
-//    public BufferFromEntity<Topography> TopographyBufferFrom;
-
-//    public TopographyTypeUtil TTUtil;
-//    public Util Util;
-//    public int SectorSize;
-
-//    public void Execute(Entity sectorEntity, int index, ref Sector sector)
-//    {
-//        DynamicBuffer<Topography> topographyBuffer = TopographyBufferFrom[sectorEntity];
-
-//        for (int i = 0; i < topographyBuffer.Length; i++)
-//        {
-//            int3 worldPosition = (int3)(sector.worldPosition + Util.Unflatten2D(i, SectorSize));
-//            Topography heightComponent = topographyBuffer[i];
-
-//            TopographyTypes currentTopographyType = (TopographyTypes)heightComponent.topopgraphyType;
-//            TopographyTypes adjacentTopographyType = (TopographyTypes)heightComponent.adjTopographyType;
-
-//            float surfaceHeight = heightComponent.surfaceHeight;
-//            float adjSurfaceHeight = heightComponent.adjSurfaceHeight;
-
-//            float heightDifference = math.abs(surfaceHeight - adjSurfaceHeight);
-//            float blockDistToEdge = heightComponent.dist2Edge;
-
-//            float heightIncrement = 1 / heightDifference;
-//            float heightAdjust = heightIncrement / blockDistToEdge;
-
-//            surfaceHeight += heightAdjust;
-//            //float modifier = GetNoise(currentTopographyType, worldPosition);
-//            //float adjModifier = GetNoise(adjacentTopographyType, worldPosition);
-
-//            ////surfaceHeight += modifier;
-//            //adjSurfaceHeight += adjModifier;
-
-            
-//            Topography newTopography = new Topography
-//            {
-//                surfaceHeight = surfaceHeight,
-//                topopgraphyType = (int)currentTopographyType,
-//                adjSurfaceHeight = adjSurfaceHeight,
-//                adjTopographyType = (int)adjacentTopographyType,
-//                dist2Edge = heightComponent.dist2Edge
-//            };
-//            topographyBuffer[i] = newTopography;
-
-//        }
-//        
-//    }
-
-//    float GetNoise(TopographyTypes topographyType, float3 worldPosition)
-//    {
-//        float modifier = 0;
-
-//        TopographyTypeStats topographyStats = TTUtil.GetTerrainTypeStats(topographyType);
-
-//        modifier += TTUtil.AddNoise(topographyStats, (int)worldPosition.x, (int)worldPosition.z);
-
-//        return modifier;
-//    }
-//}
-
-
-
-
-
-

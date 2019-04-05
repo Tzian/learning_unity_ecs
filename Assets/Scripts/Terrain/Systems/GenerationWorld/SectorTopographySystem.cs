@@ -1,7 +1,6 @@
 ﻿using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
-using UnityEngine;
 
 namespace TerrainGen
 {
@@ -15,22 +14,24 @@ namespace TerrainGen
 
         protected override void OnCreateManager()
         {
-          //  Debug.Log(" this system SectorTopographySystem  " + World);
-
             entityManager = World.GetOrCreateManager<EntityManager>();
             sectorSize = TerrainSettings.sectorSize;
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            EntityCommandBuffer eCBuffer = new EntityCommandBuffer(Allocator.Temp);
+            EntityCommandBuffer eCBuffer = new EntityCommandBuffer(Allocator.TempJob);
 
             NativeQueue<Entity> entitiesForTagRemoval = new NativeQueue<Entity>(Allocator.TempJob);
 
-            var sectorTopographyJob = new GetStartingTopograpnyJob
+            new RemoveGetSectorTopographyTagJob
             {
                 EntitiesForTagRemoval = entitiesForTagRemoval,
+                ECBuffer = eCBuffer
 
+            }.Schedule(new GetStartingTopograpnyJob
+            {
+                EntitiesForTagRemoval = entitiesForTagRemoval.ToConcurrent(),
                 SurfaceNoiseBufferFrom = GetBufferFromEntity<WorleySurfaceNoise>(true),
                 TopographyBufferFrom = GetBufferFromEntity<Topography>(false),
                 TTUtil = new TopographyTypeUtil(),
@@ -39,20 +40,13 @@ namespace TerrainGen
                 MinSurfaceHeight = TerrainSettings.minWorldHeight,
                 MaxSurfaceHeight = TerrainSettings.maxWorldHeight
 
-            }.Schedule(this, inputDeps);
-            sectorTopographyJob.Complete();
-
-            for (int i = 0; i < entitiesForTagRemoval.Count; i++)
-            {
-                Entity sectorEntity = entitiesForTagRemoval.Dequeue();
-                eCBuffer.RemoveComponent(sectorEntity, typeof(GetSectorTopography));
-            }
-            entitiesForTagRemoval.Dispose();
+            }.Schedule(this, inputDeps)).Complete();
 
             eCBuffer.Playback(entityManager);
             eCBuffer.Dispose();
+            entitiesForTagRemoval.Dispose();
 
-            return sectorTopographyJob;
+            return inputDeps;
         }
     }
 }

@@ -1,14 +1,13 @@
 ﻿using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
-using UnityEngine;
 
 
 namespace TerrainGen
 {
     [DisableAutoCreation]
     [UpdateInGroup(typeof(TerrainGenerationGroup))]
-    [UpdateAfter(typeof(SectorRangeTagSystem))]
+    [UpdateAfter(typeof(SectorDrawRangeTagSystem))]
     public class SectorSurfaceNoiseSystem : JobComponentSystem
     {
         EntityManager entityManager;
@@ -16,11 +15,8 @@ namespace TerrainGen
         WorleyNoiseGenerator worleyNoiseGenerator;
         int sectorSize;
 
-
         protected override void OnCreateManager()
         {
-          //  Debug.Log(" this system SectorSurfaceNoiseSystem  " + World);
-
             entityManager = World.GetOrCreateManager<EntityManager>();
             sectorSize = TerrainSettings.sectorSize;
             util = new Util();
@@ -32,7 +28,9 @@ namespace TerrainGen
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            EntityCommandBuffer eCBuffer = new EntityCommandBuffer(Allocator.Temp);
+            EntityCommandBuffer eCBuffer = new EntityCommandBuffer(Allocator.TempJob);
+
+            NativeQueue<Entity> entitiesForTagRemoval = new NativeQueue<Entity>(Allocator.TempJob);
 
             var sectorNoiseJob = new SectorNoiseJob
             {
@@ -43,28 +41,23 @@ namespace TerrainGen
 
             }.Schedule(this, inputDeps);
 
-            NativeQueue<Entity> sectorEntities = new NativeQueue<Entity>(Allocator.TempJob);
-
-            var sectorIndividualCellsJob = new SectorGetIndividualCellsJob
+            new RemoveGetSectorNoiseTagJob
             {
-                SectorEntities = sectorEntities,
+                EntitiesForTagRemoval = entitiesForTagRemoval,
+                ECBuffer = eCBuffer
+            }.Schedule(new SectorGetIndividualCellsJob
+            {
+                SectorEntities = entitiesForTagRemoval.ToConcurrent(),
                 SurfaceNoiseBufferFrom = GetBufferFromEntity<WorleySurfaceNoise>(true),
                 SurfaceCellBufferFrom = GetBufferFromEntity<SurfaceCell>(false)
 
-            }.Schedule(this, sectorNoiseJob);
-            sectorIndividualCellsJob.Complete();
-
-            for (int i = 0; i < sectorEntities.Count; i++)
-            {
-                Entity sectorEntity = sectorEntities.Dequeue();
-                eCBuffer.RemoveComponent(sectorEntity, typeof(GetSectorNoise));
-            }
-            sectorEntities.Dispose();
-
+            }.Schedule(this, sectorNoiseJob)).Complete();
+ 
             eCBuffer.Playback(entityManager);
             eCBuffer.Dispose();
+            entitiesForTagRemoval.Dispose();
 
-            return sectorIndividualCellsJob;
+            return sectorNoiseJob;
         }
     }
 }

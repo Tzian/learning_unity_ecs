@@ -1,21 +1,22 @@
 ﻿using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Jobs;
 using Unity.Mathematics;
 
 
 [BurstCompile]
 [ExcludeComponent(typeof(GetSectorTopography))]
-[RequireComponentTag(typeof(Block), typeof(GenerateSectorGeology))]
+[RequireComponentTag (typeof(GenerateSectorGeology))]
 public struct SectorGeologyJob : IJobProcessComponentDataWithEntity<Sector>
 {
-    [NativeDisableParallelForRestriction]
-    public BufferFromEntity<Block> BlockBufferFromSectorEntity;
-    [NativeDisableParallelForRestriction]
-    public NativeQueue<Entity> EntitiesForTagRemoval;
+    public NativeQueue<Entity>.Concurrent EntitiesForTagRemoval;
 
     [ReadOnly]
     public BufferFromEntity<Topography> TopographyBufferFromSectorEntity;
+
+    [NativeDisableParallelForRestriction]
+    public BufferFromEntity<Block> BlockBufferFromSectorEntity;
 
     public Util Util;
     public int SectorSize;
@@ -26,11 +27,7 @@ public struct SectorGeologyJob : IJobProcessComponentDataWithEntity<Sector>
     {
         DynamicBuffer<Topography> topographyBuffer = TopographyBufferFromSectorEntity[sectorEntity];
         DynamicBuffer<Block> blockBuffer = BlockBufferFromSectorEntity[sectorEntity];
-
-        int requiredArraySize = (int)math.pow(SectorSize, 3);
-
-        if (blockBuffer.Length < requiredArraySize)
-            blockBuffer.ResizeUninitialized(requiredArraySize);
+        blockBuffer.ResizeUninitialized((int)math.pow(SectorSize, 3));
 
         float3 sectorWorldPosition = sector.worldPosition;
 
@@ -79,5 +76,21 @@ public struct SectorGeologyJob : IJobProcessComponentDataWithEntity<Sector>
             blockBuffer[b] = newBlock;
         }
         EntitiesForTagRemoval.Enqueue(sectorEntity);
+    }
+}
+
+// Not burstable
+[RequireComponentTag(typeof(GenerateSectorGeology))]
+public struct RemoveGenerateSectorGeologyTagJob : IJob
+{
+    public NativeQueue<Entity> EntitiesForTagRemoval;
+    public EntityCommandBuffer ECBuffer;
+
+    public void Execute()
+    {
+        while (EntitiesForTagRemoval.TryDequeue(out Entity myEntity))
+        {
+            ECBuffer.RemoveComponent(myEntity, typeof(GenerateSectorGeology));
+        }
     }
 }

@@ -3,36 +3,41 @@ using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
 
+
 struct FacesJob : IJob
 {
     public EntityCommandBuffer ECBuffer;
 
-    [ReadOnly] public Entity entity;
-    [ReadOnly] public Util util;
-    [ReadOnly] public int sectorSize;
+    [ReadOnly] public Entity Entity;
+    [ReadOnly] public Util Util;
+    [ReadOnly] public int SectorSize;
 
-    [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> current;
-    [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> northNeighbour;
-    [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> southNeighbour;
-    [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> eastNeighbour;
-    [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> westNeighbour;
-    [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> upNeighbour;
-    [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> downNeighbour;
+    [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> Current;
+    [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> NorthNeighbour;
+    [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> SouthNeighbour;
+    [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> EastNeighbour;
+    [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> WestNeighbour;
+    [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> UpNeighbour;
+    [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<Block> DownNeighbour;
 
-    [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<float3> directions;
+    [DeallocateOnJobCompletion] [ReadOnly] public NativeArray<float3> Directions;
 
 
     public void Execute()
     {
         // add up all the blockFaces counts, for a total sector faces count
         SectorVisFacesCount sectorFacesCount;
-        NativeArray<BlockFaces> facesCount = CheckBlockFaces(entity, out sectorFacesCount);
+        NativeArray<BlockFaces> facesCount = CheckBlockFaces(Entity, out sectorFacesCount);
 
-        ECBuffer.AddComponent(entity, sectorFacesCount);
-        DynamicBuffer<BlockFaces> facesBuffer = ECBuffer.AddBuffer<BlockFaces>(entity);
+        if (sectorFacesCount.faceCount > 0)
+        {
+
+        }
+        ECBuffer.AddComponent(Entity, sectorFacesCount);
+        DynamicBuffer<BlockFaces> facesBuffer = ECBuffer.AddBuffer<BlockFaces>(Entity);
         facesBuffer.CopyFrom(facesCount);
 
-        ECBuffer.RemoveComponent(entity, typeof(DrawMeshTag));
+        ECBuffer.RemoveComponent(Entity, typeof(DrawMeshTag));
         facesCount.Dispose();
     }
 
@@ -40,27 +45,27 @@ struct FacesJob : IJob
     {
         BlockFaceChecker faceChecker = new BlockFaceChecker()
         {
-            exposedFaces = new NativeArray<BlockFaces>(current.Length, Allocator.Temp),
+            exposedFaces = new NativeArray<BlockFaces>(Current.Length, Allocator.Temp),
 
-            current = current,
-            northNeighbour = northNeighbour,
-            southNeighbour = southNeighbour,
-            eastNeighbour = eastNeighbour,
-            westNeighbour = westNeighbour,
-            upNeighbour = upNeighbour,
-            downNeighbour = downNeighbour,
+            current = Current,
+            northNeighbour = NorthNeighbour,
+            southNeighbour = SouthNeighbour,
+            eastNeighbour = EastNeighbour,
+            westNeighbour = WestNeighbour,
+            upNeighbour = UpNeighbour,
+            downNeighbour = DownNeighbour,
 
-            sectorSize = sectorSize,
-            directions = directions,
-            util = util
+            sectorSize = SectorSize,
+            directions = Directions,
+            util = Util
         };
 
-        for (int i = 0; i < current.Length; i++)
+        for (int i = 0; i < Current.Length; i++)
         {
             faceChecker.Execute(i);
         }
 
-        counts = CountExposedFaces(current, faceChecker.exposedFaces);
+        counts = CountExposedFaces(Current, faceChecker.exposedFaces);
         return faceChecker.exposedFaces;
     }
 

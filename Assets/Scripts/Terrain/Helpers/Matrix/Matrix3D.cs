@@ -95,11 +95,16 @@ public struct Matrix3D<T> where T : struct
     public T GetItem (int3 worldPosition)
     {
         int index = WorldPositionToIndex (worldPosition);
+        if (index == -5776)
+        {
+
+        }
         return GetItem (index);
     }
 
     public T GetItem (int index)
     {
+       
         return matrix [index];
     }
 

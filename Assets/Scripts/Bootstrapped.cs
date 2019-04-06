@@ -66,10 +66,12 @@ public class Bootstrapped : ICustomBootstrap
         // setup custom world and its systems
         tGenWorld = new World("TerrainGenWorld");
         tGenGroup = tGenWorld.GetOrCreateManager<TerrainGenerationGroup>();
-        UpdateGroupCreator.FindandCreateGroup(tGenWorld, "TerrainGen", tGenGroup);
+        UpdateGroupCreator.FindandCreateGroup(tGenWorld, "TerrainGeneration", tGenGroup);
 
-        simGroup.AddSystemToUpdateList(tGenGroup);
-        simGroup.SortSystemUpdateList();
+        var customSimGroup = tGenWorld.GetOrCreateManager<SimulationSystemGroup>();
+        customSimGroup.AddSystemToUpdateList(tGenGroup);
+        customSimGroup.SortSystemUpdateList();
+
     }
 }
 
@@ -115,7 +117,6 @@ public class UpdateGroupCreator
 }
 
 [DisableAutoCreation]
-[UpdateAfter(typeof(TerrainGroup))]
 public class TerrainGenerationGroup : ComponentSystemGroup
 { }
 

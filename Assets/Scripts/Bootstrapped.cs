@@ -25,6 +25,7 @@ public class Bootstrapped : ICustomBootstrap
         SetupPlayers(playerStartPos);
 
         SetupWorldsAndUdateGroups();
+
         return systems;
     }
 
@@ -33,7 +34,7 @@ public class Bootstrapped : ICustomBootstrap
 
     void SetupPlayers(float3 startPos)
     {
-            EntityManager entityManager = World.Active.GetOrCreateManager<EntityManager>();
+            EntityManager entityManager = World.Active.EntityManager;
 
             EntityArchetype playerSetup = PhysicsEntityFactory.CreatePlayerArchetype(entityManager);
             playerEntity = entityManager.CreateEntity(playerSetup);
@@ -56,22 +57,24 @@ public class Bootstrapped : ICustomBootstrap
         defaultWorld = World.Active;
 
         // setup terrainSystems for default world
-        terrainGroup = defaultWorld.GetOrCreateManager<TerrainGroup>();
+        terrainGroup = defaultWorld.GetOrCreateSystem<TerrainGroup>();
         UpdateGroupCreator.FindandCreateGroup(defaultWorld, "Terrain", terrainGroup);
 
-        var simGroup = defaultWorld.GetOrCreateManager<SimulationSystemGroup>();
+        var simGroup = defaultWorld.GetOrCreateSystem<SimulationSystemGroup>();
         simGroup.AddSystemToUpdateList(terrainGroup);
         simGroup.SortSystemUpdateList();
+        ScriptBehaviourUpdateOrder.UpdatePlayerLoop(defaultWorld);
 
         // setup custom world and its systems
         tGenWorld = new World("TerrainGenWorld");
-        tGenGroup = tGenWorld.GetOrCreateManager<TerrainGenerationGroup>();
+        tGenWorld.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+
+        tGenGroup = tGenWorld.GetOrCreateSystem<TerrainGenerationGroup>();
         UpdateGroupCreator.FindandCreateGroup(tGenWorld, "TerrainGeneration", tGenGroup);
-
-        var customSimGroup = tGenWorld.GetOrCreateManager<SimulationSystemGroup>();
-        customSimGroup.AddSystemToUpdateList(tGenGroup);
-        customSimGroup.SortSystemUpdateList();
-
+        tGenWorld.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
+        simGroup.AddSystemToUpdateList(tGenGroup);
+        simGroup.SortSystemUpdateList();
+        ScriptBehaviourUpdateOrder.UpdatePlayerLoop(tGenWorld);
     }
 }
 
@@ -95,18 +98,18 @@ public class UpdateGroupCreator
 
             foreach (var type in systemTypes)
             {
-                customGroup.AddSystemToUpdateList(GetOrCreateManagerAndLogException(world, type) as ComponentSystemBase);
+                customGroup.AddSystemToUpdateList(GetOrCreateManagerAndLogException(world, type));
             }
             customGroup.SortSystemUpdateList();
         }
     }
 
-    public static ScriptBehaviourManager GetOrCreateManagerAndLogException(World world, Type type)
+    public static ComponentSystemBase GetOrCreateManagerAndLogException(World world, Type type)
     {
         try
         {
             //Debug.Log("Found System    " + type.FullName   +" for world   " + world);
-            return world.GetOrCreateManager(type);
+            return world.GetOrCreateSystem(type);
         }
         catch (Exception e)
         {

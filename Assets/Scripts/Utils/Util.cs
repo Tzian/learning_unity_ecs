@@ -158,7 +158,7 @@ public struct Util
 
 
     // sector range checks if needed inside burst jobs/ mimics methods in matrix3D
-    public bool SectorMatrixInRangeFromWorldPositionCheck (int3 fromWorldPos, int3 toWorldPos, int3 rootPos, int range, int sectorSize)
+    public bool MatrixInRangeFromWorldPositionCheck (int3 fromWorldPos, int3 toWorldPos, int3 rootPos, int range, int sectorSize)
     {
         int3 fromMatrixPos = WorldToSectorMatrixPosition(fromWorldPos, rootPos, sectorSize);
         int3 toMatrixPos = WorldToSectorMatrixPosition(toWorldPos, rootPos, sectorSize);

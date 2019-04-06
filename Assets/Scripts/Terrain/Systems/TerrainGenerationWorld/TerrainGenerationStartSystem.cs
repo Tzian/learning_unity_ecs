@@ -7,7 +7,11 @@ using UnityEngine;
 
 namespace TerrainGeneration
 {
-    [DisableAutoCreation]
+    [UpdateInGroup(typeof(TerrainGenerationGroup))]
+    [UpdateAfter(typeof(InViewRangeSystem))]
+    public class TerrainGenerationBuffer : EntityCommandBufferSystem { }
+
+    // [DisableAutoCreation]
     [UpdateInGroup(typeof(TerrainGenerationGroup))]
     public class TerrainGenerationStartSystem : ComponentSystem
     {
@@ -25,7 +29,7 @@ namespace TerrainGeneration
 
         protected override void OnCreateManager()
         {
-            tGEntityManager = World.GetOrCreateManager<EntityManager>();
+            tGEntityManager = World.EntityManager;
             voxelEntityArchetype = TerrainEntityFactory.CreateVoxelArchetype(tGEntityManager);
             viewZoneWidth  = TerrainSettings.areaGenerationRange * 2 + 1;
             playerEntity = Bootstrapped.playerEntity;
@@ -60,7 +64,7 @@ namespace TerrainGeneration
 
         public int3 GetPlayersCurrentPosition()
         {
-            EntityManager eM = Bootstrapped.defaultWorld.GetExistingManager<EntityManager>();
+            EntityManager eM = Bootstrapped.defaultWorld.EntityManager;
             int3 playerPosition = (int3)eM.GetComponentData<Translation>(playerEntity).Value;
             return playerPosition;
         }

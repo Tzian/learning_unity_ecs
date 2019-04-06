@@ -8,41 +8,85 @@ using UnityEngine;
 
 namespace TerrainGeneration
 {
-    [DisableAutoCreation]
     [UpdateInGroup(typeof(TerrainGenerationGroup))]
     [UpdateAfter(typeof(TerrainGenerationStartSystem))]
     public class InViewRangeSystem : JobComponentSystem
     {
+        TerrainGenerationBuffer tGBuffer;
         EntityManager tGEntityManager;
         public Entity playerEntity;
         Util util;
         int range;
+        EntityQuery myQuery;
+        NativeMultiHashMap<Entity, Voxel> myHashMap;
+        NativeQueue<Entity>  tagRemovalQueue;
+        NativeQueue<Entity> applyinDrawRangeTag;
+        NativeQueue<Entity> applyInDrawRangeBufferZoneTag;
 
         protected override void OnCreateManager()
         {
             playerEntity = Bootstrapped.playerEntity;
-            tGEntityManager = World.GetOrCreateManager<EntityManager>();
+            tGEntityManager = World.EntityManager;   
             util = new Util();
             range = TerrainSettings.areaGenerationRange;
+            tGBuffer = World.GetOrCreateSystem<TerrainGenerationBuffer>();
+            myQuery = GetEntityQuery(new EntityQueryDesc
+            {
+                All = new ComponentType[] { typeof(Voxel), typeof(GetVoxelDrawRange), typeof(Translation) },
+            });
+        }
+
+        protected void NativeCleanUp()
+        {
+            if (tagRemovalQueue.IsCreated)
+            {
+                tagRemovalQueue.Dispose();
+            }
+            if (applyinDrawRangeTag.IsCreated)
+            {
+                applyinDrawRangeTag.Dispose();
+            }
+            if (applyInDrawRangeBufferZoneTag.IsCreated)
+            {
+                applyInDrawRangeBufferZoneTag.Dispose();
+            }
+            if (tagRemovalQueue.IsCreated)
+            {
+                tagRemovalQueue.Dispose();
+            }
+            if (myHashMap.IsCreated)
+            {
+                myHashMap.Dispose();
+            }
+        }
+
+        protected override void OnStopRunning()
+        {
+            World.EntityManager.CompleteAllJobs();
+            NativeCleanUp();
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            EntityCommandBuffer eCBuffer = new EntityCommandBuffer(Allocator.TempJob);
-            var tagRemovalQueue = new NativeQueue<Entity>(Allocator.TempJob);
-            var applyinDrawRangeTag = new NativeQueue<Entity>(Allocator.TempJob);
-            var applyInDrawRangeBufferZoneTag = new NativeQueue<Entity>(Allocator.TempJob);
+            NativeCleanUp();
 
+            tagRemovalQueue = new NativeQueue<Entity>(Allocator.TempJob);
+            applyinDrawRangeTag = new NativeQueue<Entity>(Allocator.TempJob);
+            applyInDrawRangeBufferZoneTag = new NativeQueue<Entity>(Allocator.TempJob);
 
+            myHashMap = new NativeMultiHashMap<Entity, Voxel>(myQuery.CalculateLength(), Allocator.TempJob);
+
+            var handle = 
             new ApplyDrawRangeTagChangesJob
             {
                 EntitiesForTagRemoval = tagRemovalQueue,
                 ApplyInDrawRangeTag = applyinDrawRangeTag,
                 ApplyInDrawRangeBufferZoneTag = applyInDrawRangeBufferZoneTag,
-                ECBuffer = eCBuffer
+                ECBuffer = tGBuffer.CreateCommandBuffer()
 
             }.Schedule(new VoxelDrawRangeJob
             {
+                MyHashMap = myHashMap.ToConcurrent(),
                 TagRemovalQueue = tagRemovalQueue.ToConcurrent(),
                 ApplyInDrawRangeTag = applyinDrawRangeTag.ToConcurrent(),
                 ApplyInDrawRangeBufferZoneTag = applyInDrawRangeBufferZoneTag.ToConcurrent(),
@@ -50,30 +94,26 @@ namespace TerrainGeneration
                 Range = range,
                 PlayersCurrentPosition = GetPlayersCurrentPosition()
 
-            }.Schedule(this, inputDeps)).Complete();
-            eCBuffer.Playback(tGEntityManager);
-            eCBuffer.Dispose();
-            tagRemovalQueue.Dispose();
-            applyinDrawRangeTag.Dispose();
-            applyInDrawRangeBufferZoneTag.Dispose();
-            return inputDeps;
+            }.Schedule(myQuery, inputDeps));
+
+            tGBuffer.AddJobHandleForProducer(handle);
+            return handle;
         }
 
         public int3 GetPlayersCurrentPosition()
         {
-            EntityManager eM = Bootstrapped.defaultWorld.GetExistingManager<EntityManager>();
+            EntityManager eM = Bootstrapped.defaultWorld.EntityManager;
             int3 playerPosition = (int3)eM.GetComponentData<Translation>(playerEntity).Value;
             return playerPosition;
         }
-
     }
 }
 
-
 [BurstCompile]
 [RequireComponentTag(typeof(GetVoxelDrawRange))]
-public struct VoxelDrawRangeJob : IJobProcessComponentDataWithEntity<Voxel, Translation>
+public struct VoxelDrawRangeJob :  IJobForEachWithEntity  <Voxel>
 {
+    public NativeMultiHashMap<Entity, Voxel>.Concurrent MyHashMap;
     public NativeQueue<Entity>.Concurrent TagRemovalQueue;
     public NativeQueue<Entity>.Concurrent ApplyInDrawRangeTag;
     public NativeQueue<Entity>.Concurrent ApplyInDrawRangeBufferZoneTag;
@@ -81,15 +121,16 @@ public struct VoxelDrawRangeJob : IJobProcessComponentDataWithEntity<Voxel, Tran
     [ReadOnly] public int Range;
     [ReadOnly] public int3 PlayersCurrentPosition;
 
-    public void Execute(Entity entity, int index, ref Voxel voxel, ref Translation translation)
+    public void Execute(Entity entity, int index, ref Voxel voxel)
     {
-        int3 position = (int3)translation.Value;
+        MyHashMap.Add(entity, voxel);
+        int3 position = (int3)voxel.WorldPosition;
 
-        if (Util.SectorMatrixInRangeFromWorldPositionCheck(PlayersCurrentPosition, position, PlayersCurrentPosition, Range - 4, 1))
+        if (Util.MatrixInRangeFromWorldPositionCheck(PlayersCurrentPosition, position, PlayersCurrentPosition, Range - 4, 1))
         {
             ApplyInDrawRangeTag.Enqueue(entity);
         }
-        else if (Util.SectorMatrixInRangeFromWorldPositionCheck(PlayersCurrentPosition, position, PlayersCurrentPosition, Range - 2, 1))
+        else if (Util.MatrixInRangeFromWorldPositionCheck(PlayersCurrentPosition, position, PlayersCurrentPosition, Range - 2, 1))
         {
             ApplyInDrawRangeBufferZoneTag.Enqueue(entity);
         }

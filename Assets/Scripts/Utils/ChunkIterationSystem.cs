@@ -5,7 +5,7 @@ using Unity.Entities;
 public struct ChunkIterationSystem 
 {
     // this takes in the compGroup and entityType, and gives us out all entities from all chunks within the group. 
-    public NativeArray<Entity> GetEntities (ComponentGroup compGroup, ArchetypeChunkEntityType entityType)
+    public NativeArray<Entity> GetEntities (EntityQuery compGroup, ArchetypeChunkEntityType entityType)
     {
         NativeArray<ArchetypeChunk> dataChunks = compGroup.CreateArchetypeChunkArray (Allocator.TempJob);
 

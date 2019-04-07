@@ -1,26 +1,18 @@
-﻿using Unity.Collections;
-using Unity.Entities;
-using Unity.Jobs;
+﻿using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 
+
 namespace TerrainGeneration
 {
-    [UpdateInGroup(typeof(TerrainGenerationGroup))]
-    [UpdateAfter(typeof(InViewRangeSystem))]
-    public class TerrainGenerationBuffer : EntityCommandBufferSystem { }
-
-    // [DisableAutoCreation]
+    [CreateInWorld("TerrainGenerationWorld")]
     [UpdateInGroup(typeof(TerrainGenerationGroup))]
     public class TerrainGenerationStartSystem : ComponentSystem
     {
         EntityManager tGEntityManager;
         EntityArchetype voxelEntityArchetype;
-
-        public Matrix3D<Entity> viewZoneMatrix;
-        int viewZoneWidth;
-
+        Matrix3D<Entity> viewZoneMatrix;
         Entity playerEntity;
         int3 playersCurrentPosition;
         int3 playersPreviousPosition;
@@ -31,26 +23,30 @@ namespace TerrainGeneration
         {
             tGEntityManager = World.EntityManager;
             voxelEntityArchetype = TerrainEntityFactory.CreateVoxelArchetype(tGEntityManager);
-            viewZoneWidth  = TerrainSettings.areaGenerationRange * 2 + 1;
-            playerEntity = Bootstrapped.playerEntity;
             firstRun = true;
         }
 
         protected override void OnStartRunning()
         {
+            playerEntity = Bootstrapped.playerEntity;
+            viewZoneMatrix = Data.Store.viewZoneMatrix;
             playersCurrentPosition = GetPlayersCurrentPosition();
-            StartViewZoneMatrix(playersCurrentPosition);
             playersPreviousPosition = playersCurrentPosition + (100);
+        }
+
+        protected override void OnStopRunning()
+        {
+            World.EntityManager.CompleteAllJobs();
         }
 
         protected override void OnDestroyManager()
         {
-            viewZoneMatrix.Dispose();
+            Data.Store.viewZoneMatrix.Dispose();
         }
 
         protected override void OnUpdate()
         {
-            if (viewZoneMatrix.Length == 0) return;
+          //  if (Data.Store.viewZoneMatrix.Length == 0) return;
 
             playersCurrentPosition = GetPlayersCurrentPosition();
 
@@ -64,15 +60,15 @@ namespace TerrainGeneration
 
         public int3 GetPlayersCurrentPosition()
         {
-            EntityManager eM = Bootstrapped.defaultWorld.EntityManager;
+            EntityManager eM = Bootstrapped.DefaultWorld.EntityManager;
             int3 playerPosition = (int3)eM.GetComponentData<Translation>(playerEntity).Value;
             return playerPosition;
         }
 
-        void StartViewZoneMatrix(int3 playersCurrentPosition)
-        {
-            viewZoneMatrix = new Matrix3D<Entity>(viewZoneWidth, Allocator.Persistent, playersCurrentPosition, 1);
-        }
+        //void StartViewZoneMatrix(int3 playersCurrentPosition)
+        //{
+        //    Data.Store.viewZoneMatrix = new Matrix3D<Entity>(viewZoneWidth, Allocator.Persistent, playersCurrentPosition, 1);
+        //}
 
         void CreateStartArea(int3 playersCurrentPosition)
         {

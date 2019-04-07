@@ -6,16 +6,23 @@ using Unity.Mathematics;
 public struct Voxel : IComponentData
 {
     public float3 WorldPosition;
+    public ushort GeologyID;
 }
 
 public struct SurfaceTopography : IComponentData
 {
     public int Type;
+    public float Height;
 }
 
-public struct VoxelTexture : IComponentData
+public struct VoxelVisibleFaces : IComponentData
 {
-    public ushort ID;
+    public byte north;
+    public byte south;
+    public byte east;
+    public byte west;
+    public byte up;
+    public byte down;
 }
 
 public struct VoxelNeighbours : IComponentData
@@ -34,7 +41,6 @@ public struct WorleySurfaceNoise : IComponentData, System.IComparable<WorleySurf
     {
         return currentSurfaceCellValue.CompareTo(other.currentSurfaceCellValue);
     }
-
     public float3 currentCellPosition;
     public int2 currentCellIndexInMap;
     public float currentSurfaceCellValue;

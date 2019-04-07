@@ -5,15 +5,15 @@ using Unity.Jobs;
 
 namespace TerrainGeneration
 {
+    [CreateInWorld("TerrainGenerationWorld")]
     [UpdateInGroup(typeof(TerrainGenerationGroup))]
     [UpdateAfter(typeof(TerrainGenerationStartSystem))]
-    public class SurfaceNoiseSystem : JobComponentSystem
+    public class SurfaceTopographySystem : JobComponentSystem
     {
         TerrainGenerationBuffer tGBuffer;
         WorleyNoiseGenerator worleyNoiseGenerator;
-
         EntityQuery myQuery;
-        NativeQueue<Entity> tagRemovalQueue;
+        NativeQueue<Entity> EntitiesForTagChange;
 
 
         protected override void OnCreateManager()
@@ -25,37 +25,38 @@ namespace TerrainGeneration
             );
             myQuery = GetEntityQuery(new EntityQueryDesc
             {
-                All = new ComponentType[] { typeof(Voxel), typeof(SurfaceTopography), typeof(GetVoxelDrawRange) },
+                All = new ComponentType[] { typeof(Voxel), typeof(SurfaceTopography), typeof(GetSurfaceTopography) },
             });
         }
 
         protected void NativeCleanUp()
         {
-            if (tagRemovalQueue.IsCreated)
+            if (EntitiesForTagChange.IsCreated)
             {
-                tagRemovalQueue.Dispose();
+                EntitiesForTagChange.Dispose();
             }
         }
 
         protected override void OnStopRunning()
         {
-            World.EntityManager.CompleteAllJobs();
             NativeCleanUp();
         }
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            tagRemovalQueue = new NativeQueue<Entity>(Allocator.TempJob);
+            NativeCleanUp();
+
+            EntitiesForTagChange = new NativeQueue<Entity>(Allocator.TempJob);
 
             var handle =
             new RemoveGetSurfaceTopographyTagJob
             {
-                TagRemovalQueue = tagRemovalQueue,
+                EntitiesForTagChange = EntitiesForTagChange,
                 ECBuffer = tGBuffer.CreateCommandBuffer()
 
             }.Schedule(new SurfaceNoiseJob
             {
-                TagRemovalQueue = tagRemovalQueue.ToConcurrent(),
+                EntitiesForTagChange = EntitiesForTagChange.ToConcurrent(),
                 TTUtil = new TopographyTypeUtil(),
                 Noise = worleyNoiseGenerator
 
@@ -72,28 +73,29 @@ namespace TerrainGeneration
 public struct SurfaceNoiseJob : IJobForEachWithEntity<Voxel, SurfaceTopography>
 {
     [ReadOnly] public WorleyNoiseGenerator Noise;
-    public NativeQueue<Entity>.Concurrent TagRemovalQueue;
+    public NativeQueue<Entity>.Concurrent EntitiesForTagChange;
     public TopographyTypeUtil TTUtil;
 
     public void Execute(Entity entity, int index, ref Voxel voxel, ref SurfaceTopography surfaceTopography)
     {
         WorleySurfaceNoise surfaceNoise = Noise.GetEdgeData(voxel.WorldPosition.x, voxel.WorldPosition.z);
         surfaceTopography.Type = (int)TTUtil.TerrainType(surfaceNoise.currentSurfaceCellValue);
-        TagRemovalQueue.Enqueue(entity);
+        EntitiesForTagChange.Enqueue(entity);
     }
 }
 
 // Not burstable
 public struct RemoveGetSurfaceTopographyTagJob : IJob
 {
-    public NativeQueue<Entity> TagRemovalQueue;
+    public NativeQueue<Entity> EntitiesForTagChange;
     public EntityCommandBuffer ECBuffer;
 
     public void Execute()
     {
-        while (TagRemovalQueue.TryDequeue(out Entity entity))
+        while (EntitiesForTagChange.TryDequeue(out Entity myEntity))
         {
-            ECBuffer.RemoveComponent(entity, typeof(GetSurfaceTopography));
+            ECBuffer.RemoveComponent(myEntity, typeof(GetSurfaceTopography));
+            ECBuffer.AddComponent(myEntity, new GetSurfaceHeight());
         }
     }
 }

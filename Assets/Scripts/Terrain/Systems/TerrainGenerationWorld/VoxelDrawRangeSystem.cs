@@ -8,25 +8,23 @@ using UnityEngine;
 
 namespace TerrainGeneration
 {
+    [CreateInWorld("TerrainGenerationWorld")]
     [UpdateInGroup(typeof(TerrainGenerationGroup))]
     [UpdateAfter(typeof(TerrainGenerationStartSystem))]
-    public class InViewRangeSystem : JobComponentSystem
+    public class VoxelDrawRangeSystem : JobComponentSystem
     {
         TerrainGenerationBuffer tGBuffer;
-        EntityManager tGEntityManager;
         public Entity playerEntity;
         Util util;
         int range;
         EntityQuery myQuery;
-        NativeQueue<Entity>  tagRemovalQueue;
+        NativeQueue<Entity>  EntitiesForTagChange;
         NativeQueue<Entity> applyinDrawRangeTag;
         NativeQueue<Entity> applyInDrawRangeBufferZoneTag;
         NativeQueue<Entity> applyNotInDrawRangeTag;
 
         protected override void OnCreateManager()
         {
-            playerEntity = Bootstrapped.playerEntity;
-            tGEntityManager = World.EntityManager;   
             util = new Util();
             range = TerrainSettings.areaGenerationRange;
             tGBuffer = World.GetOrCreateSystem<TerrainGenerationBuffer>();
@@ -36,11 +34,16 @@ namespace TerrainGeneration
             });
         }
 
+        protected override void OnStartRunning()
+        {
+            playerEntity = Bootstrapped.playerEntity;
+        }
+
         protected void NativeCleanUp()
         {
-            if (tagRemovalQueue.IsCreated)
+            if (EntitiesForTagChange.IsCreated)
             {
-                tagRemovalQueue.Dispose();
+                EntitiesForTagChange.Dispose();
             }
             if (applyinDrawRangeTag.IsCreated)
             {
@@ -58,7 +61,6 @@ namespace TerrainGeneration
 
         protected override void OnStopRunning()
         {
-            World.EntityManager.CompleteAllJobs();
             NativeCleanUp();
         }
 
@@ -66,7 +68,7 @@ namespace TerrainGeneration
         {
             NativeCleanUp();
 
-            tagRemovalQueue = new NativeQueue<Entity>(Allocator.TempJob);
+            EntitiesForTagChange = new NativeQueue<Entity>(Allocator.TempJob);
             applyinDrawRangeTag = new NativeQueue<Entity>(Allocator.TempJob);
             applyInDrawRangeBufferZoneTag = new NativeQueue<Entity>(Allocator.TempJob);
             applyNotInDrawRangeTag = new NativeQueue<Entity>(Allocator.TempJob);
@@ -74,7 +76,7 @@ namespace TerrainGeneration
             var handle = 
             new ApplyDrawRangeTagChangesJob
             {
-                EntitiesForTagRemoval = tagRemovalQueue,
+                EntitiesForTagChange = EntitiesForTagChange,
                 ApplyInDrawRangeTag = applyinDrawRangeTag,
                 ApplyInDrawRangeBufferZoneTag = applyInDrawRangeBufferZoneTag,
                 ApplyNotInDrawRangeTag = applyNotInDrawRangeTag,
@@ -82,7 +84,7 @@ namespace TerrainGeneration
 
             }.Schedule(new VoxelDrawRangeJob
             {
-                TagRemovalQueue = tagRemovalQueue.ToConcurrent(),
+                EntitiesForTagChange = EntitiesForTagChange.ToConcurrent(),
                 ApplyInDrawRangeTag = applyinDrawRangeTag.ToConcurrent(),
                 ApplyInDrawRangeBufferZoneTag = applyInDrawRangeBufferZoneTag.ToConcurrent(),
                 ApplyNotInDrawRangeTag = applyNotInDrawRangeTag.ToConcurrent(),
@@ -98,7 +100,8 @@ namespace TerrainGeneration
 
         public int3 GetPlayersCurrentPosition()
         {
-            EntityManager eM = Bootstrapped.defaultWorld.EntityManager;
+            
+            EntityManager eM = Bootstrapped.DefaultWorld.EntityManager;
             int3 playerPosition = (int3)eM.GetComponentData<Translation>(playerEntity).Value;
             return playerPosition;
         }
@@ -109,7 +112,7 @@ namespace TerrainGeneration
 [RequireComponentTag(typeof(GetVoxelDrawRange))]
 public struct VoxelDrawRangeJob :  IJobForEachWithEntity  <Voxel>
 {
-    public NativeQueue<Entity>.Concurrent TagRemovalQueue;
+    public NativeQueue<Entity>.Concurrent EntitiesForTagChange;
     public NativeQueue<Entity>.Concurrent ApplyInDrawRangeTag;
     public NativeQueue<Entity>.Concurrent ApplyInDrawRangeBufferZoneTag;
     public NativeQueue<Entity>.Concurrent ApplyNotInDrawRangeTag;
@@ -134,7 +137,7 @@ public struct VoxelDrawRangeJob :  IJobForEachWithEntity  <Voxel>
         {
             ApplyNotInDrawRangeTag.Enqueue(entity);
         }
-        TagRemovalQueue.Enqueue(entity);
+        EntitiesForTagChange.Enqueue(entity);
     }
 }
 
@@ -144,7 +147,7 @@ public struct ApplyDrawRangeTagChangesJob : IJob
     public NativeQueue<Entity> ApplyInDrawRangeTag;
     public NativeQueue<Entity> ApplyInDrawRangeBufferZoneTag;
     public NativeQueue<Entity> ApplyNotInDrawRangeTag;
-    public NativeQueue<Entity> EntitiesForTagRemoval;
+    public NativeQueue<Entity> EntitiesForTagChange;
     public EntityCommandBuffer ECBuffer;
 
     public void Execute()
@@ -161,9 +164,10 @@ public struct ApplyDrawRangeTagChangesJob : IJob
         {
             ECBuffer.AddComponent(nDREntity, new VoxelIsNotInDrawRange());
         }
-        while (EntitiesForTagRemoval.TryDequeue(out Entity myEntity))
+        while (EntitiesForTagChange.TryDequeue(out Entity myEntity))
         {
             ECBuffer.RemoveComponent(myEntity, typeof(GetVoxelDrawRange));
+            ECBuffer.AddComponent(myEntity, new GetSurfaceTopography());
         }
     }
 }

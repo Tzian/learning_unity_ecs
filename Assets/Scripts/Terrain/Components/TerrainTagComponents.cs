@@ -3,9 +3,10 @@
 
 public struct GetVoxelDrawRange : IComponentData { }
 public struct GetSurfaceTopography : IComponentData { }
-
-
-public struct GetVoxelNeighbours : IComponentData { }
+public struct GetSurfaceHeight : IComponentData { }
+public struct GetVoxelGeology : IComponentData { }
+public struct GetAdjacentVoxels : IComponentData { }
+public struct GetMeshData : IComponentData { }
 
 
 public struct VoxelIsNotInDrawRange : IComponentData { }

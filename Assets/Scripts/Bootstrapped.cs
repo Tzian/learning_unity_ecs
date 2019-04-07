@@ -1,7 +1,7 @@
 ﻿using PhysicsEngine;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Rendering;
@@ -9,121 +9,76 @@ using Unity.Transforms;
 using UnityEditor;
 using UnityEngine;
 
-public class Bootstrapped : ICustomBootstrap
+public class Bootstrapped : CustomWorldBootstrap
 {
-    public static World defaultWorld;
-    public static World tGenWorld;
-    public static TerrainGenerationGroup tGenGroup;
-    public static TerrainGroup terrainGroup;
     public static Entity playerEntity;
     float3 playerStartPos;
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-    public List<Type> Initialize(List<Type> systems)
+
+    public Bootstrapped()
     {
-        playerStartPos = new float3(0, TerrainSettings.playerStartHeight, 0);
-        SetupPlayers(playerStartPos);
-
-        SetupWorldsAndUdateGroups();
-
-        return systems;
+        //CreateDefaultWorld = true; // Disable default world creation
+        //WorldOptions.Add(new WorldOption("My No System World"));
     }
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    public static void InitializeWithScene() { }
+    public override void PostInitialize()
+    {
+        DefaultWorld = World.Active;
+
+        playerStartPos = new float3(0, TerrainSettings.playerStartHeight, 0);
+        SetupPlayers(playerStartPos);
+        StartViewZoneMatrix((int3)playerStartPos);
+
+    }
 
     void SetupPlayers(float3 startPos)
     {
-            EntityManager entityManager = World.Active.EntityManager;
+        EntityManager entityManager = World.Active.EntityManager;
 
-            EntityArchetype playerSetup = PhysicsEntityFactory.CreatePlayerArchetype(entityManager);
-            playerEntity = entityManager.CreateEntity(playerSetup);
+        EntityArchetype playerSetup = PhysicsEntityFactory.CreatePlayerArchetype(entityManager);
+        playerEntity = entityManager.CreateEntity(playerSetup);
 
-            entityManager.SetComponentData(playerEntity, new Translation { Value = startPos });
-            entityManager.SetComponentData(playerEntity, new Rotation { Value = quaternion.identity });
-            entityManager.SetComponentData(playerEntity, new Velocity { Value = new float3(0, 0, 0) });
+        entityManager.SetComponentData(playerEntity, new Translation { Value = startPos });
+        entityManager.SetComponentData(playerEntity, new Rotation { Value = quaternion.identity });
+        entityManager.SetComponentData(playerEntity, new Velocity { Value = new float3(0, 0, 0) });
 
-            RenderMesh renderer = new RenderMesh();
-            GameObject capsule = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            renderer.mesh = capsule.GetComponent<MeshFilter>().mesh;
-            GameObject.Destroy(capsule);
-            renderer.material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/PlayerCapsuleMaterial.mat");
+        RenderMesh renderer = new RenderMesh();
+        GameObject capsule = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        renderer.mesh = capsule.GetComponent<MeshFilter>().mesh;
+        GameObject.Destroy(capsule);
+        renderer.material = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/PlayerCapsuleMaterial.mat");
 
-            entityManager.AddSharedComponentData(playerEntity, renderer);
+        entityManager.AddSharedComponentData(playerEntity, renderer);
     }
 
-    void SetupWorldsAndUdateGroups()
+    void StartViewZoneMatrix(int3 playersCurrentPosition)
     {
-        defaultWorld = World.Active;
-
-        // setup terrainSystems for default world
-        terrainGroup = defaultWorld.GetOrCreateSystem<TerrainGroup>();
-        UpdateGroupCreator.FindandCreateGroup(defaultWorld, "Terrain", terrainGroup);
-
-        var simGroup = defaultWorld.GetOrCreateSystem<SimulationSystemGroup>();
-        simGroup.AddSystemToUpdateList(terrainGroup);
-        simGroup.SortSystemUpdateList();
-        ScriptBehaviourUpdateOrder.UpdatePlayerLoop(defaultWorld);
-
-        // setup custom world and its systems
-        tGenWorld = new World("TerrainGenWorld");
-        tGenWorld.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-
-        tGenGroup = tGenWorld.GetOrCreateSystem<TerrainGenerationGroup>();
-        UpdateGroupCreator.FindandCreateGroup(tGenWorld, "TerrainGeneration", tGenGroup);
-        tGenWorld.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
-        simGroup.AddSystemToUpdateList(tGenGroup);
-        simGroup.SortSystemUpdateList();
-        ScriptBehaviourUpdateOrder.UpdatePlayerLoop(tGenWorld);
+        int viewZoneWidth = TerrainSettings.areaGenerationRange * 2 + 1;
+        Data.Store.viewZoneMatrix = new Matrix3D<Entity>(viewZoneWidth, Allocator.Persistent, playersCurrentPosition, 1);
     }
 }
 
-public class UpdateGroupCreator
+
+/// <summary>
+/// Apply to a system, system group or buffer system 
+/// to only create in specified world
+/// </summary>
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
+public class CreateInWorldAttribute : Attribute
 {
-    public static void FindandCreateGroup(World world, string name, ComponentSystemGroup customGroup)
+    public string Name;
+    public CreateInWorldAttribute(string name)
     {
-        World.Active = world;
-
-        foreach (var ass in AppDomain.CurrentDomain.GetAssemblies())
-        {
-            if (ass.ManifestModule.ToString() == "Microsoft.CodeAnalysis.Scripting.dll")
-                continue;
-            var allTypes = ass.GetTypes();
-
-            var systemTypes = allTypes.Where(
-                t => t.IsSubclassOf(typeof(ComponentSystemBase)) &&
-                !t.IsAbstract &&
-                !t.ContainsGenericParameters &&
-                (t.Namespace != null && t.Namespace == name));
-
-            foreach (var type in systemTypes)
-            {
-                customGroup.AddSystemToUpdateList(GetOrCreateManagerAndLogException(world, type));
-            }
-            customGroup.SortSystemUpdateList();
-        }
-    }
-
-    public static ComponentSystemBase GetOrCreateManagerAndLogException(World world, Type type)
-    {
-        try
-        {
-            //Debug.Log("Found System    " + type.FullName   +" for world   " + world);
-            return world.GetOrCreateSystem(type);
-        }
-        catch (Exception e)
-        {
-            Debug.LogException(e);
-            return null;
-        }
+        Name = name;
     }
 }
 
-[DisableAutoCreation]
-public class TerrainGenerationGroup : ComponentSystemGroup
-{ }
 
-[DisableAutoCreation]
-[AlwaysUpdateSystem]
-public class TerrainGroup : ComponentSystemGroup
-{ }
+[CreateInWorld("TerrainGenerationWorld")]
+public class TerrainGenerationGroup : ComponentSystemGroup { }
+
+[CreateInWorld("TerrainGenerationWorld")]
+[UpdateAfter(typeof(TerrainGenerationGroup))]
+public class TerrainGenerationBuffer : EntityCommandBufferSystem { }
+
+public class TerrainGroup : ComponentSystemGroup { }

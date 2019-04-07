@@ -9,7 +9,8 @@ namespace TerrainGeneration
         {
             return entityManager.CreateArchetype(
                 ComponentType.ReadWrite<Voxel>(),
-                ComponentType.ReadWrite<Translation>()
+                ComponentType.ReadWrite<Translation>(),
+                ComponentType.ReadWrite<SurfaceTopography>()
 
 
                 

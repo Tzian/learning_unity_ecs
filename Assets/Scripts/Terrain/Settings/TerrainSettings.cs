@@ -13,10 +13,9 @@ public class TerrainSettings
     public const int minWorldGenHeight = 50;
     public const int maxWorldGenHeight = 460;
 
-
-
-
-
-
-
+    // terrain surface cell noise settings, this noise determines topography type for the area
+    public const int seed = 1337;
+    public const float cellFrequency = 0.002f;  // affects region size in the cellular noise used to generate them
+    public const float perterbAmp = 0.50f;
+    public const float cellularJitter = 0.5f;
 }

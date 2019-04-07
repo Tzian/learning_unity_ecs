@@ -18,10 +18,10 @@ namespace TerrainGeneration
         Util util;
         int range;
         EntityQuery myQuery;
-        NativeMultiHashMap<Entity, Voxel> myHashMap;
         NativeQueue<Entity>  tagRemovalQueue;
         NativeQueue<Entity> applyinDrawRangeTag;
         NativeQueue<Entity> applyInDrawRangeBufferZoneTag;
+        NativeQueue<Entity> applyNotInDrawRangeTag;
 
         protected override void OnCreateManager()
         {
@@ -32,7 +32,7 @@ namespace TerrainGeneration
             tGBuffer = World.GetOrCreateSystem<TerrainGenerationBuffer>();
             myQuery = GetEntityQuery(new EntityQueryDesc
             {
-                All = new ComponentType[] { typeof(Voxel), typeof(GetVoxelDrawRange), typeof(Translation) },
+                All = new ComponentType[] { typeof(Voxel), typeof(GetVoxelDrawRange) },
             });
         }
 
@@ -50,13 +50,9 @@ namespace TerrainGeneration
             {
                 applyInDrawRangeBufferZoneTag.Dispose();
             }
-            if (tagRemovalQueue.IsCreated)
+            if (applyNotInDrawRangeTag.IsCreated)
             {
-                tagRemovalQueue.Dispose();
-            }
-            if (myHashMap.IsCreated)
-            {
-                myHashMap.Dispose();
+                applyNotInDrawRangeTag.Dispose();
             }
         }
 
@@ -73,8 +69,7 @@ namespace TerrainGeneration
             tagRemovalQueue = new NativeQueue<Entity>(Allocator.TempJob);
             applyinDrawRangeTag = new NativeQueue<Entity>(Allocator.TempJob);
             applyInDrawRangeBufferZoneTag = new NativeQueue<Entity>(Allocator.TempJob);
-
-            myHashMap = new NativeMultiHashMap<Entity, Voxel>(myQuery.CalculateLength(), Allocator.TempJob);
+            applyNotInDrawRangeTag = new NativeQueue<Entity>(Allocator.TempJob);
 
             var handle = 
             new ApplyDrawRangeTagChangesJob
@@ -82,14 +77,15 @@ namespace TerrainGeneration
                 EntitiesForTagRemoval = tagRemovalQueue,
                 ApplyInDrawRangeTag = applyinDrawRangeTag,
                 ApplyInDrawRangeBufferZoneTag = applyInDrawRangeBufferZoneTag,
+                ApplyNotInDrawRangeTag = applyNotInDrawRangeTag,
                 ECBuffer = tGBuffer.CreateCommandBuffer()
 
             }.Schedule(new VoxelDrawRangeJob
             {
-                MyHashMap = myHashMap.ToConcurrent(),
                 TagRemovalQueue = tagRemovalQueue.ToConcurrent(),
                 ApplyInDrawRangeTag = applyinDrawRangeTag.ToConcurrent(),
                 ApplyInDrawRangeBufferZoneTag = applyInDrawRangeBufferZoneTag.ToConcurrent(),
+                ApplyNotInDrawRangeTag = applyNotInDrawRangeTag.ToConcurrent(),
                 Util = util,
                 Range = range,
                 PlayersCurrentPosition = GetPlayersCurrentPosition()
@@ -113,17 +109,17 @@ namespace TerrainGeneration
 [RequireComponentTag(typeof(GetVoxelDrawRange))]
 public struct VoxelDrawRangeJob :  IJobForEachWithEntity  <Voxel>
 {
-    public NativeMultiHashMap<Entity, Voxel>.Concurrent MyHashMap;
     public NativeQueue<Entity>.Concurrent TagRemovalQueue;
     public NativeQueue<Entity>.Concurrent ApplyInDrawRangeTag;
     public NativeQueue<Entity>.Concurrent ApplyInDrawRangeBufferZoneTag;
+    public NativeQueue<Entity>.Concurrent ApplyNotInDrawRangeTag;
+
     [ReadOnly] public Util Util;
     [ReadOnly] public int Range;
     [ReadOnly] public int3 PlayersCurrentPosition;
 
     public void Execute(Entity entity, int index, ref Voxel voxel)
     {
-        MyHashMap.Add(entity, voxel);
         int3 position = (int3)voxel.WorldPosition;
 
         if (Util.MatrixInRangeFromWorldPositionCheck(PlayersCurrentPosition, position, PlayersCurrentPosition, Range - 4, 1))
@@ -134,6 +130,10 @@ public struct VoxelDrawRangeJob :  IJobForEachWithEntity  <Voxel>
         {
             ApplyInDrawRangeBufferZoneTag.Enqueue(entity);
         }
+        else
+        {
+            ApplyNotInDrawRangeTag.Enqueue(entity);
+        }
         TagRemovalQueue.Enqueue(entity);
     }
 }
@@ -143,15 +143,12 @@ public struct ApplyDrawRangeTagChangesJob : IJob
 {
     public NativeQueue<Entity> ApplyInDrawRangeTag;
     public NativeQueue<Entity> ApplyInDrawRangeBufferZoneTag;
+    public NativeQueue<Entity> ApplyNotInDrawRangeTag;
     public NativeQueue<Entity> EntitiesForTagRemoval;
     public EntityCommandBuffer ECBuffer;
 
     public void Execute()
     {
-        while (EntitiesForTagRemoval.TryDequeue(out Entity myEntity))
-        {
-            ECBuffer.RemoveComponent(myEntity, typeof(GetVoxelDrawRange));
-        }
         while (ApplyInDrawRangeTag.TryDequeue(out Entity iDREntity))
         {
             ECBuffer.AddComponent(iDREntity, new VoxelIsInDrawRange());
@@ -159,6 +156,14 @@ public struct ApplyDrawRangeTagChangesJob : IJob
         while (ApplyInDrawRangeBufferZoneTag.TryDequeue(out Entity bZEntity))
         {
             ECBuffer.AddComponent(bZEntity, new VoxelIsInDrawBufferZone());
+        }
+        while (ApplyNotInDrawRangeTag.TryDequeue(out Entity nDREntity))
+        {
+            ECBuffer.AddComponent(nDREntity, new VoxelIsNotInDrawRange());
+        }
+        while (EntitiesForTagRemoval.TryDequeue(out Entity myEntity))
+        {
+            ECBuffer.RemoveComponent(myEntity, typeof(GetVoxelDrawRange));
         }
     }
 }

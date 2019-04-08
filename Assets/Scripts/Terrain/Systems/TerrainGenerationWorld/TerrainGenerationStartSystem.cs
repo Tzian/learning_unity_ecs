@@ -12,7 +12,7 @@ namespace TerrainGeneration
     {
         EntityManager tGEntityManager;
         EntityArchetype voxelEntityArchetype;
-        Matrix3D<Entity> viewZoneMatrix;
+        //Matrix3D<Entity> viewZoneMatrix;
         Entity playerEntity;
         int3 playersCurrentPosition;
         int3 playersPreviousPosition;
@@ -29,7 +29,7 @@ namespace TerrainGeneration
         protected override void OnStartRunning()
         {
             playerEntity = Bootstrapped.playerEntity;
-            viewZoneMatrix = Data.Store.viewZoneMatrix;
+            //viewZoneMatrix = Data.Store.viewZoneMatrix;
             playersCurrentPosition = GetPlayersCurrentPosition();
             playersPreviousPosition = playersCurrentPosition + (100);
         }
@@ -87,7 +87,7 @@ namespace TerrainGeneration
             tGEntityManager.SetComponentData(newVoxelEntity, new Voxel { WorldPosition = voxelPosition });
             tGEntityManager.SetComponentData(newVoxelEntity, new Translation { Value = voxelPosition });
             tGEntityManager.AddComponent(newVoxelEntity, typeof(GetVoxelDrawRange));
-            viewZoneMatrix.AddItem(newVoxelEntity, voxelPosition);
+            Data.Store.viewZoneMatrix.AddItem(newVoxelEntity, voxelPosition);
             return newVoxelEntity;
         }
     }

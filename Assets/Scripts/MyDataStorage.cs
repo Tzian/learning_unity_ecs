@@ -1,8 +1,4 @@
-﻿using Unity.Collections;
-using Unity.Entities;
-using Unity.Mathematics;
-using Unity.Transforms;
-using UnityEngine;
+﻿using Unity.Entities;
 
 
 public class Data 
@@ -21,7 +17,6 @@ public class Data
     }
 
     public Matrix3D<Entity> viewZoneMatrix;
-
 
     public Data()
     {

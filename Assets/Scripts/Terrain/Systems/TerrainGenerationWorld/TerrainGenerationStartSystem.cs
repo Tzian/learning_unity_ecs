@@ -46,8 +46,6 @@ namespace TerrainGeneration
 
         protected override void OnUpdate()
         {
-          //  if (Data.Store.viewZoneMatrix.Length == 0) return;
-
             playersCurrentPosition = GetPlayersCurrentPosition();
 
             if (firstRun == true)
@@ -64,11 +62,6 @@ namespace TerrainGeneration
             int3 playerPosition = (int3)eM.GetComponentData<Translation>(playerEntity).Value;
             return playerPosition;
         }
-
-        //void StartViewZoneMatrix(int3 playersCurrentPosition)
-        //{
-        //    Data.Store.viewZoneMatrix = new Matrix3D<Entity>(viewZoneWidth, Allocator.Persistent, playersCurrentPosition, 1);
-        //}
 
         void CreateStartArea(int3 playersCurrentPosition)
         {
@@ -88,7 +81,7 @@ namespace TerrainGeneration
             }
         }
 
-        Entity CreateNewVoxel (int3 voxelPosition)
+        Entity CreateNewVoxel(int3 voxelPosition)
         {
             Entity newVoxelEntity = tGEntityManager.CreateEntity(voxelEntityArchetype);
             tGEntityManager.SetComponentData(newVoxelEntity, new Voxel { WorldPosition = voxelPosition });

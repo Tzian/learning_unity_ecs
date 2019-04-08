@@ -16,17 +16,17 @@ public struct Matrix3D<T> where T : struct
 
     public int Length { get { return matrix.Length; } }
 
-    public void Dispose ()
+    public void Dispose()
     {
-        if (matrix.IsCreated) matrix.Dispose ();
-        if (isSet.IsCreated) isSet.Dispose ();
+        if (matrix.IsCreated) matrix.Dispose();
+        if (isSet.IsCreated) isSet.Dispose();
     }
 
     // Initialise both matrices 
-    public Matrix3D (int width, Allocator label, int3 rootPosition, int itemWorldSize = 1)
+    public Matrix3D(int width, Allocator label, int3 rootPosition, int itemWorldSize = 1)
     {
-        matrix = new NativeArray<T> ((int) math.pow (width, 3), label);
-        isSet = new NativeArray<sbyte> (matrix.Length, label);
+        matrix = new NativeArray<T>((int)math.pow(width, 3), label);
+        isSet = new NativeArray<sbyte>(matrix.Length, label);
 
         this.width = width;
         this.label = label;
@@ -35,86 +35,84 @@ public struct Matrix3D<T> where T : struct
     }
 
     // add and set item to matrix
-    public void AddItem (T item, int3 worldPosition)
+    public void AddItem(T item, int3 worldPosition)
     {
-        if (!WorldPositionIsInMatrix (worldPosition))
-            RepositionResize (WorldToMatrixPosition (worldPosition));
+        if (!WorldPositionIsInMatrix(worldPosition))
+            RepositionResize(WorldToMatrixPosition(worldPosition));
 
-        int index = WorldPositionToIndex (worldPosition);
-        SetItem (item, index);
+        int index = WorldPositionToIndex(worldPosition);
+        SetItem(item, index);
     }
 
-    public void SetItem (T item, int index)
+    public void SetItem(T item, int index)
     {
-        matrix [index] = item;
-        isSet [index] = 1;
+        matrix[index] = item;
+        isSet[index] = 1;
     }
 
     // unset item 
-    public void UnsetItem (int3 worldPosition)
+    public void UnsetItem(int3 worldPosition)
     {
-        UnsetItem (WorldPositionToIndex (worldPosition));
+        UnsetItem(WorldPositionToIndex(worldPosition));
     }
 
-    public void UnsetItem (int index)
+    public void UnsetItem(int index)
     {
-        matrix [index] = new T ();
-        isSet [index] = 0;
+        matrix[index] = new T();
+        isSet[index] = 0;
     }
 
     // item is SET in matrix bools
-    public bool ItemIsSet (int3 worldPosition)
+    public bool ItemIsSet(int3 worldPosition)
     {
-        if (!WorldPositionIsInMatrix (worldPosition))
+        if (!WorldPositionIsInMatrix(worldPosition))
             return false;
 
-        return ItemIsSet (WorldPositionToIndex (worldPosition));
+        return ItemIsSet(WorldPositionToIndex(worldPosition));
     }
 
-    public bool ItemIsSet (int index)
+    public bool ItemIsSet(int index)
     {
         if (index < 0 || index >= matrix.Length)
             return false;
 
-        return isSet [index] > 0;
+        return isSet[index] > 0;
     }
 
     // bool check to see if item is in the matrix AND isSet
-    public bool TryGetItem (int3 worldPosition, out T item)
+    public bool TryGetItem(int3 worldPosition, out T item)
     {
-        if (!WorldPositionIsInMatrix (worldPosition) || !ItemIsSet (worldPosition))
+        if (!WorldPositionIsInMatrix(worldPosition) || !ItemIsSet(worldPosition))
         {
-            item = new T ();
+            item = new T();
             return false;
         }
-        item = GetItem (WorldPositionToIndex (worldPosition));
+        item = GetItem(WorldPositionToIndex(worldPosition));
         return true;
     }
 
     // get item out of matrix by index or worldPosition
-    public T GetItem (int3 worldPosition)
+    public T GetItem(int3 worldPosition)
     {
-        int index = WorldPositionToIndex (worldPosition);
-
-        return GetItem (index);
+        int index = WorldPositionToIndex(worldPosition);
+        return GetItem(index);
     }
 
-    public T GetItem (int index)
+    public T GetItem(int index)
     {
-       
-        return matrix [index];
+        return matrix[index];
     }
 
     #region Position is within matrix checks
 
-    public bool WorldPositionIsInMatrix (int3 worldPosition, int offset = 0)
+    public bool WorldPositionIsInMatrix(int3 worldPosition, int offset = 0)
     {
-        int3 matrixPosition = WorldToMatrixPosition (worldPosition);
+        int3 matrixPosition = WorldToMatrixPosition(worldPosition);
 
-        return MatrixPositionIsInMatrix (matrixPosition, offset);
+        return MatrixPositionIsInMatrix(matrixPosition, offset);
     }
 
-    public bool MatrixPositionIsInMatrix (int3 matrixPosition, int offset = 0)
+    public bool MatrixPositionIsInMatrix(int3 matrixPosition, int offset = 0)
     {
         int arrayWidth = width - 1;
 
@@ -125,20 +123,20 @@ public struct Matrix3D<T> where T : struct
         else
             return false;
     }
-  
+
     #endregion
 
     #region In range checks
     // in range from
-    public bool InRangeFromWorldPosition (int3 fromWorldPos, int3 toWorldPos, int offset)
+    public bool InRangeFromWorldPosition(int3 fromWorldPos, int3 toWorldPos, int offset)
     {
-        int3 fromMatrixPos = WorldToMatrixPosition (fromWorldPos);
-        int3 toMatrixPos = WorldToMatrixPosition (toWorldPos);
+        int3 fromMatrixPos = WorldToMatrixPosition(fromWorldPos);
+        int3 toMatrixPos = WorldToMatrixPosition(toWorldPos);
 
-        return InRangeFromMatrixPosition (fromMatrixPos, toMatrixPos, offset);
+        return InRangeFromMatrixPosition(fromMatrixPos, toMatrixPos, offset);
     }
 
-    public bool InRangeFromMatrixPosition (int3 fromMatrixPos, int3 toMatrixPos, int offset)
+    public bool InRangeFromMatrixPosition(int3 fromMatrixPos, int3 toMatrixPos, int offset)
     {
         if (fromMatrixPos.x >= toMatrixPos.x - offset &&
             fromMatrixPos.y >= toMatrixPos.y - offset &&
@@ -155,7 +153,7 @@ public struct Matrix3D<T> where T : struct
 
     #region Reposition and Resize methods
 
-    public int3 RepositionResize (int3 matrixPosition)
+    public int3 RepositionResize(int3 matrixPosition)
     {
         // CustomDebugTools.IncrementDebugCount ("Matrix march count");
         int x = matrixPosition.x;
@@ -167,7 +165,7 @@ public struct Matrix3D<T> where T : struct
 
         if (x < 0)
         {
-            int rightGap = EmptyLayersAtEdge (0);
+            int rightGap = EmptyLayersAtEdge(0);
             rootPositionChange.x = x;
 
             widthChange.x = (x * -1) - rightGap;
@@ -176,7 +174,7 @@ public struct Matrix3D<T> where T : struct
         }
         else if (x >= width)
         {
-            int leftGap = EmptyLayersAtEdge (1);
+            int leftGap = EmptyLayersAtEdge(1);
             widthChange.x = x - (width - 1) - leftGap;
 
             rootPositionChange.x = leftGap;
@@ -184,7 +182,7 @@ public struct Matrix3D<T> where T : struct
 
         if (y < 0)
         {
-            int topGap = EmptyLayersAtEdge (2);
+            int topGap = EmptyLayersAtEdge(2);
             rootPositionChange.y = y;
 
             widthChange.y = (y * -1) - topGap;
@@ -193,7 +191,7 @@ public struct Matrix3D<T> where T : struct
         }
         else if (y >= width)
         {
-            int bottomGap = EmptyLayersAtEdge (3);
+            int bottomGap = EmptyLayersAtEdge(3);
             widthChange.y = y - (width - 1) - bottomGap;
 
             rootPositionChange.y = bottomGap;
@@ -201,7 +199,7 @@ public struct Matrix3D<T> where T : struct
 
         if (z < 0)
         {
-            int frontGap = EmptyLayersAtEdge (4);
+            int frontGap = EmptyLayersAtEdge(4);
             rootPositionChange.z = z;
 
             widthChange.z = (z * -1) - frontGap;
@@ -209,7 +207,7 @@ public struct Matrix3D<T> where T : struct
         }
         else if (z >= width)
         {
-            int backGap = EmptyLayersAtEdge (5);
+            int backGap = EmptyLayersAtEdge(5);
             widthChange.z = z - (width - 1) - backGap;
 
             rootPositionChange.z = backGap;
@@ -220,30 +218,30 @@ public struct Matrix3D<T> where T : struct
 
         int newWidth = width;
         if (widthChange.x + widthChange.y + widthChange.z > 0)
-            newWidth += util.maximum ((int) widthChange.x, (int) widthChange.y, (int) widthChange.z);
+            newWidth += util.maximum((int)widthChange.x, (int)widthChange.y, (int)widthChange.z);
 
-        int3 rootIndexOffset = new int3 (rootPositionChange) * -1;
+        int3 rootIndexOffset = new int3(rootPositionChange) * -1;
 
-        CopyToAdjustedMatrix (rootIndexOffset, newWidth);
+        CopyToAdjustedMatrix(rootIndexOffset, newWidth);
 
-        rootPosition += new int3 (rootPositionChange) * itemWorldSize;
+        rootPosition += new int3(rootPositionChange) * itemWorldSize;
 
         return rootIndexOffset;
     }
 
-    int EmptyLayersAtEdge (int emptyLayersAtEdgeCount)
+    int EmptyLayersAtEdge(int emptyLayersAtEdgeCount)
     {
         int count = 0;
 
-        while (LayerIsEmpty (emptyLayersAtEdgeCount, count))
+        while (LayerIsEmpty(emptyLayersAtEdgeCount, count))
             count++;
 
         return count;
     }
 
-    bool LayerIsEmpty (int emptyLayersAtEdgeCount, int offset = 0)
+    bool LayerIsEmpty(int emptyLayersAtEdgeCount, int offset = 0)
     {
-        if (offset >= math.floor (width / 3)) return false;
+        if (offset >= math.floor(width / 3)) return false;
 
         if (emptyLayersAtEdgeCount < 2) // getting x axis layers
         {
@@ -253,7 +251,7 @@ public struct Matrix3D<T> where T : struct
             {
                 for (int z = 0; z < width; z++)
                 {
-                    if (ItemIsSet (MatrixPositionToIndex (new int3 (x + xOffset, y, z))))
+                    if (ItemIsSet(MatrixPositionToIndex(new int3(x + xOffset, y, z))))
                         return false;
                 }
             }
@@ -266,7 +264,7 @@ public struct Matrix3D<T> where T : struct
             {
                 for (int z = 0; z < width; z++)
                 {
-                    if (ItemIsSet (MatrixPositionToIndex (new int3 (x, y + yOffset, z))))
+                    if (ItemIsSet(MatrixPositionToIndex(new int3(x, y + yOffset, z))))
                         return false;
                 }
             }
@@ -279,7 +277,7 @@ public struct Matrix3D<T> where T : struct
             {
                 for (int y = 0; y < width; y++)
                 {
-                    if (ItemIsSet (MatrixPositionToIndex (new int3 (x, y, z + zOffset))))
+                    if (ItemIsSet(MatrixPositionToIndex(new int3(x, y, z + zOffset))))
                         return false;
                 }
             }
@@ -287,26 +285,26 @@ public struct Matrix3D<T> where T : struct
         return true;
     }
 
-    public void CopyToAdjustedMatrix (int3 rootIndexOffset, int newWidth)
+    public void CopyToAdjustedMatrix(int3 rootIndexOffset, int newWidth)
     {
-        NativeArray<T> newMatrix = new NativeArray<T> ((int) math.pow (newWidth, 3), label);
-        NativeArray<sbyte> newIsSet = new NativeArray<sbyte> (newMatrix.Length, label);
+        NativeArray<T> newMatrix = new NativeArray<T>((int)math.pow(newWidth, 3), label);
+        NativeArray<sbyte> newIsSet = new NativeArray<sbyte>(newMatrix.Length, label);
 
         for (int i = 0; i < matrix.Length; i++)
         {
-            int3 oldMatrixPosition = IndexToMatrixPosition (i);
+            int3 oldMatrixPosition = IndexToMatrixPosition(i);
             int3 newMatrixPosition = oldMatrixPosition + rootIndexOffset;
 
-            int newIndex = util.Flatten (newMatrixPosition, newWidth);
+            int newIndex = util.Flatten(newMatrixPosition, newWidth);
 
             if (newIndex < 0 || newIndex >= newMatrix.Length) continue;
 
-            newMatrix [newIndex] = matrix [i];
-            newIsSet [newIndex] = isSet [i];
+            newMatrix[newIndex] = matrix[i];
+            newIsSet[newIndex] = isSet[i];
         }
         width = newWidth;
 
-        Dispose ();
+        Dispose();
         matrix = newMatrix;
         isSet = newIsSet;
     }
@@ -315,32 +313,32 @@ public struct Matrix3D<T> where T : struct
     #region Index, WorldPos and MatrixPos calcs
 
     // worldpos, matrixpos and index calcs
-    public int WorldPositionToIndex (int3 worldPosition)
+    public int WorldPositionToIndex(int3 worldPosition)
     {
-        return MatrixPositionToIndex (WorldToMatrixPosition (worldPosition));
+        return MatrixPositionToIndex(WorldToMatrixPosition(worldPosition));
     }
 
-    public int3 WorldToMatrixPosition (int3 worldPosition)
+    public int3 WorldToMatrixPosition(int3 worldPosition)
     {
         return (worldPosition - rootPosition) / itemWorldSize;
     }
 
-    public int MatrixPositionToIndex (int3 matrixPosition)
+    public int MatrixPositionToIndex(int3 matrixPosition)
     {
-        return util.Flatten (matrixPosition, width);
+        return util.Flatten(matrixPosition, width);
     }
 
-    public int3 IndexToWorldPosition (int index)
+    public int3 IndexToWorldPosition(int index)
     {
-        return MatrixToWorldPosition (IndexToMatrixPosition (index));
+        return MatrixToWorldPosition(IndexToMatrixPosition(index));
     }
 
-    public int3 IndexToMatrixPosition (int index)
+    public int3 IndexToMatrixPosition(int index)
     {
-        return util.UnflattenToInt3 (index, width);
+        return util.UnflattenToInt3(index, width);
     }
 
-    public int3 MatrixToWorldPosition (int3 matrixPosition)
+    public int3 MatrixToWorldPosition(int3 matrixPosition)
     {
         return (matrixPosition * itemWorldSize) + rootPosition;
     }

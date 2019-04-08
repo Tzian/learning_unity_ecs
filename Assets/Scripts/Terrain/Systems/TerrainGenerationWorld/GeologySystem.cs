@@ -54,7 +54,8 @@ namespace TerrainGeneration
             }.Schedule(new GetGeologyJob
             {
                 EntitiesForTagChange = EntitiesForTagChange.ToConcurrent(),
-                DirtLayerThickness = TerrainSettings.dirtLayerThickness
+                DirtLayerThickness = TerrainSettings.dirtLayerThickness,
+                VoxelGeographyBufferFromVoxelEntity = GetBufferFromEntity<VoxelGeology>(false)
 
             }.Schedule(myQuery, inputDeps));
 
@@ -71,31 +72,44 @@ public struct GetGeologyJob : IJobForEachWithEntity<Voxel, SurfaceTopography>
     public NativeQueue<Entity>.Concurrent EntitiesForTagChange;
     public int DirtLayerThickness;
 
+    [NativeDisableParallelForRestriction]
+    public BufferFromEntity<VoxelGeology> VoxelGeographyBufferFromVoxelEntity;
+
     public void Execute(Entity entity, int index, ref Voxel voxel, ref SurfaceTopography surfaceTopography)
     {
+        DynamicBuffer<VoxelGeology> voxelGeologyBuffer = VoxelGeographyBufferFromVoxelEntity[entity];
+        if (voxelGeologyBuffer.Length < 1)
+            voxelGeologyBuffer.ResizeUninitialized(1);
+
         float3 voxelPos = voxel.WorldPosition;
         float SurfaceHeight = surfaceTopography.Height;
+        ushort geologyID;
 
         if (voxelPos.y < 5)
         {
-            voxel.GeologyID = (ushort)TextureAtlasSettings.ID.BEDROCK;
+            geologyID = (ushort)TextureAtlasSettings.ID.BEDROCK;
         }
         else if (voxelPos.y < SurfaceHeight - DirtLayerThickness)
         {
-            voxel.GeologyID = (ushort)TextureAtlasSettings.ID.GRANITE;
+            geologyID = (ushort)TextureAtlasSettings.ID.GRANITE;
         }
         else if (voxelPos.y >= SurfaceHeight - DirtLayerThickness && voxelPos.y < SurfaceHeight)
         {
-            voxel.GeologyID = (ushort)TextureAtlasSettings.ID.MUD;
+            geologyID = (ushort)TextureAtlasSettings.ID.MUD;
         }
         else if (voxelPos.y == SurfaceHeight)
         {
-            voxel.GeologyID = (ushort)TextureAtlasSettings.ID.GRASS;
+            geologyID = (ushort)TextureAtlasSettings.ID.GRASS;
         }
         else
         {
-            voxel.GeologyID = (ushort)TextureAtlasSettings.ID.AIR;
+            geologyID = (ushort)TextureAtlasSettings.ID.AIR;
         }
+        voxel.GeologyID = geologyID;
+
+        VoxelGeology newGeology = new VoxelGeology { ID = geologyID };
+        voxelGeologyBuffer[0] = newGeology;
+
         EntitiesForTagChange.Enqueue(entity);
     }
 }

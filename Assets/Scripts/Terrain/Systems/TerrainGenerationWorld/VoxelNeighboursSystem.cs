@@ -49,7 +49,6 @@ namespace TerrainGeneration
 
             EntitiesForTagChange = new NativeQueue<Entity>(Allocator.TempJob);
 
-
             var handle =
             new RemoveGetAdjacentVoxelsTagJob
             {
@@ -106,7 +105,7 @@ public struct RemoveGetAdjacentVoxelsTagJob : IJob
         while (EntitiesForTagChange.TryDequeue(out Entity myEntity))
         {
             ECBuffer.RemoveComponent(myEntity, typeof(GetAdjacentVoxels));
-            ECBuffer.AddComponent(myEntity, new GetMeshData());
+            ECBuffer.AddComponent(myEntity, new GetVisibleFaces());
         }
     }
 }

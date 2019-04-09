@@ -201,7 +201,7 @@ public struct TextureAtlasSettings
         DEAD_LEAVES,
     }
 
-    public Vector2 GetTextureCoord (ID id, Dir dir) // updated 20th nov 2018
+    public Vector2 GetTextureCoord (ID id, Dir dir) 
     {
         switch (id)
         {
@@ -467,7 +467,7 @@ public struct TextureAtlasSettings
         }
     }
     
-    public byte IsTransparent (ushort id)  // updated 20th November 2018
+    public byte IsTransparent (ushort id) 
     {
         switch ((ID) id)
         {

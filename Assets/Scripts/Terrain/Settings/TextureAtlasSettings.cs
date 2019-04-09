@@ -9,7 +9,7 @@ public struct TextureAtlasSettings
 
     public enum Dir { North, South, East, West, Up, Down };
 
-    public enum ID : ushort   // updated 20th November 2018
+    public enum ID : ushort   
     {
         // Atlas row Y0
         ERRORFALLBACK,

@@ -23,6 +23,42 @@ public struct VoxelVisibleFaces : IComponentData
     public byte west;
     public byte up;
     public byte down;
+
+    public int faceCount;
+    public int vertexCount;
+    public int triangleCount;
+    public int uvsCount;
+
+    public byte this[byte side]
+    {
+        get
+        {
+            switch (side)
+            {
+                case 0: return north;
+                case 1: return south;
+                case 2: return east;
+                case 3: return west;
+                case 4: return up;
+                case 5: return down;
+                default: throw new System.ArgumentOutOfRangeException("Index out of range 5: " + side);
+            }
+        }
+
+        set
+        {
+            switch (side)
+            {
+                case 0: north = value; break;
+                case 1: south = value; break;
+                case 2: east = value; break;
+                case 3: west = value; break;
+                case 4: up = value; break;
+                case 5: down = value; break;
+                default: throw new System.ArgumentOutOfRangeException("Index out of range 5: " + side);
+            }
+        }
+    }
 }
 
 public struct VoxelNeighbours : IComponentData

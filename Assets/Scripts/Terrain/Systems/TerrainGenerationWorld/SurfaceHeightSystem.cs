@@ -64,7 +64,7 @@ namespace TerrainGeneration
     }
 }
 
-//[BurstCompile]  Fast Noise in TTUtil.AddNoise not burst compatible as managed object
+[BurstCompile]  
 [RequireComponentTag(typeof(GetSurfaceHeight))]
 public struct GetSurfaceHeightJob : IJobForEachWithEntity<Voxel, SurfaceTopography>
 {

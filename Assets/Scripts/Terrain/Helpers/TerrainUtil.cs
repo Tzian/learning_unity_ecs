@@ -1,6 +1,4 @@
 ﻿using UnityEngine;
-using static FastNoise;
-
 
 public struct TopographyTypeStats
 {
@@ -15,8 +13,8 @@ public struct TopographyTypeStats
     public float frequency;
     public int fractalOctaves;
     public float fractalGain;
-    public NoiseType noiseType;
-    public FractalType fractalType;
+    public JobifiedNoise.NoiseType noiseType;
+    public JobifiedNoise.FractalType fractalType;
     //Interp interp;
 }
 
@@ -24,7 +22,7 @@ public struct TopographyTypeUtil
 {
     public float AddNoise(TopographyTypeStats stats, int x, int z)
     {
-        FastNoise noise = new FastNoise();
+        JobifiedNoise noise = new JobifiedNoise();
 
         noise.SetFrequency(stats.frequency);
         noise.SetFractalOctaves(stats.fractalOctaves);
@@ -54,8 +52,8 @@ public struct TopographyTypeUtil
                     frequency = 0.003f,
                     fractalOctaves = 3,
                     fractalGain = 0.4f,
-                    noiseType = NoiseType.CubicFractal,
-                    fractalType = FractalType.RigidMulti,
+                    noiseType = JobifiedNoise.NoiseType.CubicFractal,
+                    fractalType = JobifiedNoise.FractalType.RigidMulti,
                 };
                 return mountains;
 
@@ -73,8 +71,8 @@ public struct TopographyTypeUtil
                     frequency = 0.006f,
                     fractalOctaves = 3,
                     fractalGain = 0.2f,
-                    noiseType = NoiseType.Cubic,
-                    fractalType = FractalType.FBM,
+                    noiseType = JobifiedNoise.NoiseType.Cubic,
+                    fractalType = JobifiedNoise.FractalType.FBM,
                 };
                 return hills;
 
@@ -92,8 +90,8 @@ public struct TopographyTypeUtil
                     frequency = 0.01f,
                     fractalOctaves = 2,
                     fractalGain = 0.2f,
-                    noiseType = NoiseType.CubicFractal,
-                    fractalType = FractalType.FBM,
+                    noiseType = JobifiedNoise.NoiseType.CubicFractal,
+                    fractalType = JobifiedNoise.FractalType.FBM,
                 };
                 return flat;
 
@@ -111,8 +109,8 @@ public struct TopographyTypeUtil
                     frequency = 0.003f,
                     fractalOctaves = 2,
                     fractalGain = 0.2f,
-                    noiseType = NoiseType.CubicFractal,
-                    fractalType = FractalType.FBM,
+                    noiseType = JobifiedNoise.NoiseType.CubicFractal,
+                    fractalType = JobifiedNoise.FractalType.FBM,
                 };
                 return valleys;
 
@@ -130,8 +128,8 @@ public struct TopographyTypeUtil
                     frequency = 0.001f,
                     fractalOctaves = 2,
                     fractalGain = 0.1f,
-                    noiseType = NoiseType.CubicFractal,
-                    fractalType = FractalType.RigidMulti,
+                    noiseType = JobifiedNoise.NoiseType.CubicFractal,
+                    fractalType = JobifiedNoise.FractalType.RigidMulti,
                 };
                 return oceans;
 
@@ -148,8 +146,8 @@ public struct TopographyTypeUtil
                     frequency = 0.0001f,
                     fractalOctaves = 3,
                     fractalGain = 0.2f,
-                    noiseType = NoiseType.SimplexFractal,
-                    fractalType = FractalType.FBM,
+                    noiseType = JobifiedNoise.NoiseType.SimplexFractal,
+                    fractalType = JobifiedNoise.FractalType.FBM,
                 };
                 return defaultFlat;
         }

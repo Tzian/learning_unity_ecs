@@ -82,3 +82,5 @@ public class TerrainGenerationGroup : ComponentSystemGroup { }
 public class TerrainGenerationBuffer : EntityCommandBufferSystem { }
 
 public class TerrainGroup : ComponentSystemGroup { }
+
+public class TerrainBuffer : EntityCommandBufferSystem { }

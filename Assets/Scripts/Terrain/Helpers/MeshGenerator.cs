@@ -92,40 +92,40 @@ struct MeshGenerator
         switch (side)
         {
             case 0: // North
-                vertices[index + 0] = new Verts { vertex = baseVerts[4] + position };
-                vertices[index + 1] = new Verts { vertex = baseVerts[5] + position };
-                vertices[index + 2] = new Verts { vertex = baseVerts[1] + position };
-                vertices[index + 3] = new Verts { vertex = baseVerts[0] + position };
+                vertices[index + 0] = new Verts { vertex = baseVerts[4] };
+                vertices[index + 1] = new Verts { vertex = baseVerts[5] };
+                vertices[index + 2] = new Verts { vertex = baseVerts[1] };
+                vertices[index + 3] = new Verts { vertex = baseVerts[0] };
                 break;
             case 1: // South
-                vertices[index + 0] = new Verts { vertex = baseVerts[6] + position };
-                vertices[index + 1] = new Verts { vertex = baseVerts[7] + position };
-                vertices[index + 2] = new Verts { vertex = baseVerts[3] + position };
-                vertices[index + 3] = new Verts { vertex = baseVerts[2] + position };
+                vertices[index + 0] = new Verts { vertex = baseVerts[6] };
+                vertices[index + 1] = new Verts { vertex = baseVerts[7] };
+                vertices[index + 2] = new Verts { vertex = baseVerts[3] };
+                vertices[index + 3] = new Verts { vertex = baseVerts[2] };
                 break;
             case 2: // East
-                vertices[index + 0] = new Verts { vertex = baseVerts[5] + position };
-                vertices[index + 1] = new Verts { vertex = baseVerts[6] + position };
-                vertices[index + 2] = new Verts { vertex = baseVerts[2] + position };
-                vertices[index + 3] = new Verts { vertex = baseVerts[1] + position };
+                vertices[index + 0] = new Verts { vertex = baseVerts[5] };
+                vertices[index + 1] = new Verts { vertex = baseVerts[6] };
+                vertices[index + 2] = new Verts { vertex = baseVerts[2] };
+                vertices[index + 3] = new Verts { vertex = baseVerts[1] };
                 break;
             case 3: // West
-                vertices[index + 0] = new Verts { vertex = baseVerts[7] + position };
-                vertices[index + 1] = new Verts { vertex = baseVerts[4] + position };
-                vertices[index + 2] = new Verts { vertex = baseVerts[0] + position };
-                vertices[index + 3] = new Verts { vertex = baseVerts[3] + position };
+                vertices[index + 0] = new Verts { vertex = baseVerts[7] };
+                vertices[index + 1] = new Verts { vertex = baseVerts[4] };
+                vertices[index + 2] = new Verts { vertex = baseVerts[0] };
+                vertices[index + 3] = new Verts { vertex = baseVerts[3] };
                 break;
             case 4: // Up
-                vertices[index + 0] = new Verts { vertex = baseVerts[7] + position };
-                vertices[index + 1] = new Verts { vertex = baseVerts[6] + position };
-                vertices[index + 2] = new Verts { vertex = baseVerts[5] + position };
-                vertices[index + 3] = new Verts { vertex = baseVerts[4] + position };
+                vertices[index + 0] = new Verts { vertex = baseVerts[7] };
+                vertices[index + 1] = new Verts { vertex = baseVerts[6] };
+                vertices[index + 2] = new Verts { vertex = baseVerts[5] };
+                vertices[index + 3] = new Verts { vertex = baseVerts[4] };
                 break;
             case 5: // Down
-                vertices[index + 0] = new Verts { vertex = baseVerts[0] + position };
-                vertices[index + 1] = new Verts { vertex = baseVerts[1] + position };
-                vertices[index + 2] = new Verts { vertex = baseVerts[2] + position };
-                vertices[index + 3] = new Verts { vertex = baseVerts[3] + position };
+                vertices[index + 0] = new Verts { vertex = baseVerts[0] };
+                vertices[index + 1] = new Verts { vertex = baseVerts[1] };
+                vertices[index + 2] = new Verts { vertex = baseVerts[2] };
+                vertices[index + 3] = new Verts { vertex = baseVerts[3] };
                 break;
 
             default: throw new System.ArgumentOutOfRangeException("Index out of range 5: " + side);

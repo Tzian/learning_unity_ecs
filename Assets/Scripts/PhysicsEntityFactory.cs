@@ -15,7 +15,9 @@ namespace PhysicsEngine
                 ComponentType.ReadWrite<Rotation>(),
                 ComponentType.ReadWrite<Velocity>(),
                 ComponentType.ReadWrite<RenderMeshProxy>(),
-                ComponentType.ReadWrite<LocalToWorld>()
+                ComponentType.ReadWrite<LocalToWorld>(),
+                ComponentType.ReadWrite<PhysicsEntity>(),
+                ComponentType.ReadWrite<Stats>()
                 // ComponentType.Create<PlayerInput>()
 
 
@@ -28,4 +30,9 @@ namespace PhysicsEngine
 public struct Velocity : IComponentData
 {
     public float3 Value;
+}
+
+public struct LocalPlayer : ISharedComponentData
+{
+    public GameObjectEntity Value;
 }

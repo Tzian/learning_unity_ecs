@@ -87,12 +87,11 @@ namespace Terrain
             }
 
             Mesh mesh = new Mesh();
+            
             mesh.vertices = verticesArray;
             mesh.uv = uvsArray;
             mesh.SetTriangles(trianglesArray, 0);
-
-          //  mesh.RecalculateNormals();
-          //  mesh.RecalculateBounds();
+            mesh.RecalculateNormals();
             return mesh;
         }
 

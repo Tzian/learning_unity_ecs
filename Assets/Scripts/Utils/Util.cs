@@ -184,6 +184,11 @@ public struct Util
         else
             return false;
     }
+
+    public static float3 RotateAroundCenter(Quaternion rotation, Vector3 position, Vector3 centre)
+    {
+        return rotation * (position - centre) + centre;
+    }
 }
 
 public struct CubeDirections
